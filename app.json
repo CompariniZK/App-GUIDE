@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Boussole",
+    "slug": "boussole",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A3A5C"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.boussole.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A3A5C"
+      },
+      "package": "com.boussole.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
