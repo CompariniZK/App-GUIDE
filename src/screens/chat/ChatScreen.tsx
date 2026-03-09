@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ChatMessage } from '../../types';
 import { Colors } from '../../constants/colors';
+import { API_ENDPOINTS } from '../../constants/api';
 
 // ─── Suggested questions ────────────────────────────────────────────────────
 const SUGGESTIONS = [
@@ -17,29 +18,35 @@ const SUGGESTIONS = [
   "Quels documents pour l'APL ?",
 ];
 
-// ─── API call (placeholder — à remplacer avec votre API key Claude) ──────────
-async function callBoussoleAI(userMessage: string, history: ChatMessage[]): Promise<string> {
-  // TODO: Remplacer par l'appel réel à votre backend Node.js
-  // Exemple: POST /api/chat { message, history }
-  // Le backend appelle Claude API avec RAG (LangChain + pgvector)
-  //
-  // Pour tester localement, remplacez cette fonction par:
-  // const response = await fetch('http://localhost:3000/api/chat', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ message: userMessage, history }),
-  // });
-  // const data = await response.json();
-  // return data.reply;
+// ─── API call with Claude AI Backend ──────────────────────────────────────
+const API_URL = API_ENDPOINTS.chat;
 
-  // Simulated response for development:
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  return (
-    `Je comprends votre question sur : "${userMessage}".\n\n` +
-    `**Note :** L'IA Boussole sera connectée à la base de données juridique française via le backend Node.js + Claude API. ` +
-    `Pour l'instant, explorez nos **Guides officiels** dans l'onglet Guides — ils contiennent toutes les étapes détaillées !\n\n` +
-    `📚 [Voir les guides →]`
-  );
+async function callBoussoleAI(userMessage: string, history: ChatMessage[]): Promise<string> {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userMessage,
+        language: 'fr',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.reply || 'Désolé, aucune réponse reçue.';
+  } catch (error) {
+    console.error('Error calling Boussole AI:', error);
+    return (
+      `⚠️ Erreur de connexion à l'IA.\n\n` +
+      `Assurez-vous que le backend Boussole est démarré sur le port 3000:\n` +
+      `cd backend && npm start\n\n` +
+      `En attendant, consultez nos **Guides officiels** dans l'onglet Guides.`
+    );
+  }
 }
 
 export default function ChatScreen() {
