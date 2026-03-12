@@ -21,11 +21,7 @@ function GuidesStack() {
     <Stack.Navigator>
       <Stack.Screen name="GuidesList"   component={GuidesScreen}      options={{ headerShown: false }} />
       <Stack.Screen name="GuideDetail"  component={GuideDetailScreen}
-        options={{
-          headerTitle: '',
-          headerTransparent: true,
-          headerTintColor: Colors.white,
-        }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

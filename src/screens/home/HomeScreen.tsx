@@ -141,7 +141,7 @@ export default function HomeScreen() {
               <Ionicons name="chatbubble-ellipses" size={22} color={Colors.accent} />
             </View>
             <View>
-              <Text style={styles.aiTitle}>Une question sur la burocratie ?</Text>
+              <Text style={styles.aiTitle}>Une question sur la bureaucratie ?</Text>
               <Text style={styles.aiDesc}>Notre IA répond en français, anglais ou portugais</Text>
             </View>
           </View>

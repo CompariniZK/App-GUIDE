@@ -25,6 +25,13 @@ const LANG_LABELS: Record<string, string> = {
   ar: '🇲🇦 العربية',
 };
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  BR: '🇧🇷', MA: '🇲🇦', DZ: '🇩🇿', TN: '🇹🇳', PT: '🇵🇹',
+  ES: '🇪🇸', SN: '🇸🇳', ML: '🇲🇱', CM: '🇨🇲', CI: '🇨🇮',
+  NG: '🇳🇬', PH: '🇵🇭', CN: '🇨🇳', IN: '🇮🇳', TR: '🇹🇷',
+  RO: '🇷🇴', PL: '🇵🇱', MX: '🇲🇽', CO: '🇨🇴', OTHER: '🌍',
+};
+
 export default function ProfileScreen() {
   const { profile, resetProfile } = useProfile();
 
@@ -54,7 +61,7 @@ export default function ProfileScreen() {
         {/* Profile card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={32} color={Colors.white} />
+            <Text style={{ fontSize: 36 }}>{COUNTRY_FLAGS[profile.nationality] || '🌍'}</Text>
           </View>
           <Text style={styles.situationLabel}>{SITUATION_LABELS[profile.situation]}</Text>
           <Text style={styles.langLabel}>{LANG_LABELS[profile.language]}</Text>

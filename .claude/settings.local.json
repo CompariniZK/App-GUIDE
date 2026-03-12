@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(test -d node_modules)",
+      "Bash(npx expo --version)",
+      "Bash(npx expo install expo@latest)",
+      "Bash(npx expo install --fix)",
+      "Bash(npx expo install --fix -- --legacy-peer-deps)",
+      "Bash(npm install expo@~54.0.0 --legacy-peer-deps)",
+      "Bash(npm install react-native-worklets --legacy-peer-deps)",
+      "Bash(npx tsc --noEmit --strict src/i18n/locales/fr.ts)",
+      "Bash(wc -l src/i18n/locales/*.ts)"
+    ]
+  }
+}

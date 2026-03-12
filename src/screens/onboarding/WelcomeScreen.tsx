@@ -13,7 +13,7 @@ const { width } = Dimensions.get('window');
 type Props = { navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Welcome'> };
 
 const FEATURES = [
-  { icon: 'document-text-outline', title: 'Guias officiels',    desc: 'Étapes claires pour chaque démarche administrative' },
+  { icon: 'document-text-outline', title: 'Guides officiels',   desc: 'Étapes claires pour chaque démarche administrative' },
   { icon: 'chatbubble-ellipses-outline', title: 'IA Juridique', desc: 'Posez vos questions, obtenez des réponses basées sur les lois françaises' },
   { icon: 'globe-outline', title: 'Multilingue',                desc: 'Français, Anglais, Portugais, Espagnol et Arabe' },
 ];

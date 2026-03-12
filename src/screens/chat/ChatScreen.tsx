@@ -7,6 +7,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ChatMessage } from '../../types';
 import { Colors } from '../../constants/colors';
+import { useProfile } from '../../context/ProfileContext';
+import { callBoussoleAI } from '../../services/ai';
 
 // ─── Suggested questions ────────────────────────────────────────────────────
 const SUGGESTIONS = [
@@ -17,32 +19,8 @@ const SUGGESTIONS = [
   "Quels documents pour l'APL ?",
 ];
 
-// ─── API call (placeholder — à remplacer avec votre API key Claude) ──────────
-async function callBoussoleAI(userMessage: string, history: ChatMessage[]): Promise<string> {
-  // TODO: Remplacer par l'appel réel à votre backend Node.js
-  // Exemple: POST /api/chat { message, history }
-  // Le backend appelle Claude API avec RAG (LangChain + pgvector)
-  //
-  // Pour tester localement, remplacez cette fonction par:
-  // const response = await fetch('http://localhost:3000/api/chat', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ message: userMessage, history }),
-  // });
-  // const data = await response.json();
-  // return data.reply;
-
-  // Simulated response for development:
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  return (
-    `Je comprends votre question sur : "${userMessage}".\n\n` +
-    `**Note :** L'IA Boussole sera connectée à la base de données juridique française via le backend Node.js + Claude API. ` +
-    `Pour l'instant, explorez nos **Guides officiels** dans l'onglet Guides — ils contiennent toutes les étapes détaillées !\n\n` +
-    `📚 [Voir les guides →]`
-  );
-}
-
 export default function ChatScreen() {
+  const { profile } = useProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
@@ -83,7 +61,7 @@ export default function ChatScreen() {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const reply = await callBoussoleAI(content, messages);
+      const reply = await callBoussoleAI(content, messages, profile);
       setMessages(prev =>
         prev
           .filter(m => m.id !== 'loading')

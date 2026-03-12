@@ -101,7 +101,7 @@ export default function NationalityScreen({ navigation }: Props) {
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.btnNext, !selected && styles.btnNextDisabled]}
-          onPress={() => selected && navigation.navigate('Situation')}
+          onPress={() => selected && navigation.navigate('Situation', { nationality: selected })}
           disabled={!selected}
           activeOpacity={0.85}
         >
