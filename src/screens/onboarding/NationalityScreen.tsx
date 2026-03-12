@@ -7,45 +7,46 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingStackParamList } from '../../types';
 import { Colors } from '../../constants/colors';
+import { useTranslation } from '../../i18n';
 
 type Props = { navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Nationality'> };
 
 const COUNTRIES = [
-  { code: 'BR', name: 'Brésil', flag: '🇧🇷' },
-  { code: 'MA', name: 'Maroc', flag: '🇲🇦' },
-  { code: 'DZ', name: 'Algérie', flag: '🇩🇿' },
-  { code: 'TN', name: 'Tunisie', flag: '🇹🇳' },
-  { code: 'PT', name: 'Portugal', flag: '🇵🇹' },
-  { code: 'ES', name: 'Espagne', flag: '🇪🇸' },
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳' },
-  { code: 'ML', name: 'Mali', flag: '🇲🇱' },
-  { code: 'CM', name: 'Cameroun', flag: '🇨🇲' },
-  { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮' },
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
-  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
-  { code: 'CN', name: 'Chine', flag: '🇨🇳' },
-  { code: 'IN', name: 'Inde', flag: '🇮🇳' },
-  { code: 'TR', name: 'Turquie', flag: '🇹🇷' },
-  { code: 'RO', name: 'Roumanie', flag: '🇷🇴' },
-  { code: 'PL', name: 'Pologne', flag: '🇵🇱' },
-  { code: 'MX', name: 'Mexique', flag: '🇲🇽' },
-  { code: 'CO', name: 'Colombie', flag: '🇨🇴' },
-  { code: 'OTHER', name: 'Autre pays', flag: '🌍' },
+  { code: 'BR', flag: '🇧🇷' },
+  { code: 'MA', flag: '🇲🇦' },
+  { code: 'DZ', flag: '🇩🇿' },
+  { code: 'TN', flag: '🇹🇳' },
+  { code: 'PT', flag: '🇵🇹' },
+  { code: 'ES', flag: '🇪🇸' },
+  { code: 'SN', flag: '🇸🇳' },
+  { code: 'ML', flag: '🇲🇱' },
+  { code: 'CM', flag: '🇨🇲' },
+  { code: 'CI', flag: '🇨🇮' },
+  { code: 'NG', flag: '🇳🇬' },
+  { code: 'PH', flag: '🇵🇭' },
+  { code: 'CN', flag: '🇨🇳' },
+  { code: 'IN', flag: '🇮🇳' },
+  { code: 'TR', flag: '🇹🇷' },
+  { code: 'RO', flag: '🇷🇴' },
+  { code: 'PL', flag: '🇵🇱' },
+  { code: 'MX', flag: '🇲🇽' },
+  { code: 'CO', flag: '🇨🇴' },
+  { code: 'OTHER', flag: '🌍' },
 ];
 
 export default function NationalityScreen({ navigation }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const { t } = useTranslation();
 
   const filtered = COUNTRIES.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+    t(`country.${c.code}`).toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
@@ -58,23 +59,21 @@ export default function NationalityScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.titleArea}>
-        <Text style={styles.title}>Quelle est votre nationalité ?</Text>
-        <Text style={styles.subtitle}>Cela nous aide à personnaliser les informations selon votre situation.</Text>
+        <Text style={styles.title}>{t('nationality.title')}</Text>
+        <Text style={styles.subtitle}>{t('nationality.subtitle')}</Text>
       </View>
 
-      {/* Search */}
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color={Colors.textMuted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Chercher un pays..."
+          placeholder={t('nationality.search')}
           placeholderTextColor={Colors.textMuted}
           value={search}
           onChangeText={setSearch}
         />
       </View>
 
-      {/* Country list */}
       <FlatList
         data={filtered}
         keyExtractor={item => item.code}
@@ -88,7 +87,7 @@ export default function NationalityScreen({ navigation }: Props) {
           >
             <Text style={styles.flag}>{item.flag}</Text>
             <Text style={[styles.countryName, selected === item.code && styles.countryNameSelected]}>
-              {item.name}
+              {t(`country.${item.code}`)}
             </Text>
             {selected === item.code && (
               <Ionicons name="checkmark-circle" size={22} color={Colors.primaryLight} />
@@ -97,7 +96,6 @@ export default function NationalityScreen({ navigation }: Props) {
         )}
       />
 
-      {/* Continue button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.btnNext, !selected && styles.btnNextDisabled]}
@@ -105,7 +103,7 @@ export default function NationalityScreen({ navigation }: Props) {
           disabled={!selected}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnNextText}>Continuer</Text>
+          <Text style={styles.btnNextText}>{t('nationality.continue')}</Text>
           <Ionicons name="arrow-forward" size={18} color={Colors.white} />
         </TouchableOpacity>
       </View>

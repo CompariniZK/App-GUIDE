@@ -9,6 +9,7 @@ import { GUIDES, GUIDE_CATEGORIES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { Guide, GuideCategory } from '../../types';
 import { useProfile } from '../../context/ProfileContext';
+import { useTranslation } from '../../i18n';
 
 const CATEGORY_COLORS: Record<GuideCategory, string> = {
   documents: Colors.catDocuments,
@@ -26,11 +27,14 @@ export default function GuidesScreen() {
   const [search, setSearch] = useState('');
   const { profile } = useProfile();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
 
   const filtered = GUIDES.filter(g => {
     const matchCat = selectedCat === 'all' || g.category === selectedCat;
-    const matchSearch = g.title.toLowerCase().includes(search.toLowerCase())
-      || g.subtitle.toLowerCase().includes(search.toLowerCase());
+    const title = t(`guide.${g.id}.title`);
+    const subtitle = t(`guide.${g.id}.subtitle`);
+    const matchSearch = title.toLowerCase().includes(search.toLowerCase())
+      || subtitle.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
@@ -39,16 +43,15 @@ export default function GuidesScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Guides</Text>
-        <Text style={styles.headerSub}>{GUIDES.length} démarches disponibles</Text>
+        <Text style={styles.headerTitle}>{t('guides.title')}</Text>
+        <Text style={styles.headerSub}>{t('guides.count', { count: GUIDES.length })}</Text>
       </View>
 
-      {/* Search */}
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color={Colors.textMuted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher un guide..."
+          placeholder={t('guides.search')}
           placeholderTextColor={Colors.textMuted}
           value={search}
           onChangeText={setSearch}
@@ -60,10 +63,9 @@ export default function GuidesScreen() {
         )}
       </View>
 
-      {/* Category filter */}
       <FlatList
         horizontal
-        data={[{ id: 'all', label: 'Tous', emoji: '📋' }, ...GUIDE_CATEGORIES]}
+        data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
         keyExtractor={i => i.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.catList}
@@ -74,13 +76,12 @@ export default function GuidesScreen() {
           >
             <Text style={styles.catEmoji}>{item.emoji}</Text>
             <Text style={[styles.catLabel, selectedCat === item.id && styles.catLabelActive]}>
-              {item.label}
+              {item.id === 'all' ? t('guides.filterAll') : t(`category.${item.id}`)}
             </Text>
           </TouchableOpacity>
         )}
       />
 
-      {/* Guides list */}
       <FlatList
         data={filtered}
         keyExtractor={g => g.id}
@@ -89,7 +90,7 @@ export default function GuidesScreen() {
         ListEmptyComponent={() => (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>Aucun guide trouvé</Text>
+            <Text style={styles.emptyText}>{t('guides.empty')}</Text>
           </View>
         )}
         renderItem={({ item }) => (
@@ -102,13 +103,13 @@ export default function GuidesScreen() {
               <Text style={styles.cardEmoji}>{item.emoji}</Text>
             </View>
             <View style={styles.cardBody}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSub} numberOfLines={1}>{item.subtitle}</Text>
+              <Text style={styles.cardTitle}>{t(`guide.${item.id}.title`)}</Text>
+              <Text style={styles.cardSub} numberOfLines={1}>{t(`guide.${item.id}.subtitle`)}</Text>
               <View style={styles.cardMeta}>
                 <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
-                <Text style={styles.cardTime}>{item.estimatedTime}</Text>
+                <Text style={styles.cardTime}>{t(`guide.${item.id}.time`)}</Text>
                 <Text style={styles.cardDot}>·</Text>
-                <Text style={styles.cardSteps}>{item.steps.length} étapes</Text>
+                <Text style={styles.cardSteps}>{t('guideDetail.steps', { count: item.steps.length })}</Text>
               </View>
             </View>
             {profile?.completedGuides.includes(item.id) ? (

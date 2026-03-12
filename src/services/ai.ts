@@ -2,13 +2,27 @@ import { ChatMessage, UserProfile } from '../types';
 
 const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 
-const SYSTEM_PROMPT = `Tu es Boussole, un assistant IA spécialisé dans l'aide aux immigrants en France.
+const LANG_NAMES: Record<string, string> = {
+  fr: 'français',
+  en: 'English',
+  pt: 'português',
+  es: 'español',
+  ar: 'العربية',
+};
+
+function buildSystemPrompt(profile?: UserProfile | null): string {
+  const lang = profile?.language || 'fr';
+  const langName = LANG_NAMES[lang] || 'français';
+
+  return `Tu es Boussole, un assistant IA spécialisé dans l'aide aux immigrants en France.
 
 Ton rôle :
 - Répondre aux questions sur la bureaucratie française (titres de séjour, carte Vitale, CAF, logement, travail, etc.)
 - Donner des étapes claires et concrètes basées sur les procédures officielles
 - Citer les sources officielles (service-public.fr, legifrance.gouv.fr) quand possible
-- Répondre dans la langue de l'utilisateur (français, anglais, portugais, espagnol ou arabe)
+- IMPORTANT : Réponds TOUJOURS en ${langName}
+
+Contexte utilisateur : nationalité ${profile?.nationality || 'inconnue'}, situation: ${profile?.situation || 'inconnue'}, langue préférée: ${langName}
 
 Règles :
 - Sois concis et pratique, avec des étapes numérotées
@@ -16,6 +30,7 @@ Règles :
 - Mentionne les délais habituels
 - Si tu n'es pas sûr, dis-le clairement et oriente vers la préfecture ou le service compétent
 - N'invente jamais d'informations juridiques`;
+}
 
 export async function callBoussoleAI(
   userMessage: string,
@@ -23,17 +38,8 @@ export async function callBoussoleAI(
   profile?: UserProfile | null,
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY) {
-    return (
-      'L\'assistant IA n\'est pas encore configuré.\n\n' +
-      'Pour l\'activer, ajoutez votre clé API Anthropic dans le fichier `.env` :\n' +
-      '`EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-xxxxx`\n\n' +
-      'En attendant, consultez nos **Guides** dans l\'onglet dédié !'
-    );
+    throw new Error('API_NOT_CONFIGURED');
   }
-
-  const contextInfo = profile
-    ? `\nContexte utilisateur : nationalité ${profile.nationality}, situation: ${profile.situation}, langue: ${profile.language}`
-    : '';
 
   const messages = history
     .filter(m => !m.isLoading && m.id !== '0')
@@ -55,7 +61,7 @@ export async function callBoussoleAI(
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT + contextInfo,
+      system: buildSystemPrompt(profile),
       messages,
     }),
   });

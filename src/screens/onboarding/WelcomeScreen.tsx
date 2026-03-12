@@ -7,62 +7,64 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingStackParamList } from '../../types';
 import { Colors } from '../../constants/colors';
+import { useTranslation } from '../../i18n';
 
 const { width } = Dimensions.get('window');
 
 type Props = { navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Welcome'> };
 
-const FEATURES = [
-  { icon: 'document-text-outline', title: 'Guides officiels',   desc: 'Étapes claires pour chaque démarche administrative' },
-  { icon: 'chatbubble-ellipses-outline', title: 'IA Juridique', desc: 'Posez vos questions, obtenez des réponses basées sur les lois françaises' },
-  { icon: 'globe-outline', title: 'Multilingue',                desc: 'Français, Anglais, Portugais, Espagnol et Arabe' },
+const FEATURE_ICONS = [
+  'document-text-outline',
+  'chatbubble-ellipses-outline',
+  'globe-outline',
+];
+
+const FEATURE_KEYS = [
+  'welcome.feature.guides',
+  'welcome.feature.ai',
+  'welcome.feature.multilingual',
 ];
 
 export default function WelcomeScreen({ navigation }: Props) {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
-      {/* Logo area */}
       <View style={styles.hero}>
         <View style={styles.logoCircle}>
           <Ionicons name="compass" size={64} color={Colors.accent} />
         </View>
         <Text style={styles.appName}>Boussole</Text>
-        <Text style={styles.tagline}>Votre guide en France</Text>
-        <Text style={styles.subtitle}>
-          Naviguez la bureaucratie française avec confiance — quelle que soit votre nationalité.
-        </Text>
+        <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
+        <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
       </View>
 
-      {/* Feature list */}
       <View style={styles.features}>
-        {FEATURES.map((f, i) => (
+        {FEATURE_KEYS.map((key, i) => (
           <View key={i} style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name={f.icon as any} size={22} color={Colors.accent} />
+              <Ionicons name={FEATURE_ICONS[i] as any} size={22} color={Colors.accent} />
             </View>
             <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{f.title}</Text>
-              <Text style={styles.featureDesc}>{f.desc}</Text>
+              <Text style={styles.featureTitle}>{t(`${key}.title`)}</Text>
+              <Text style={styles.featureDesc}>{t(`${key}.desc`)}</Text>
             </View>
           </View>
         ))}
       </View>
 
-      {/* CTA */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.btnPrimary}
           onPress={() => navigation.navigate('Nationality')}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnPrimaryText}>Commencer</Text>
+          <Text style={styles.btnPrimaryText}>{t('welcome.cta')}</Text>
           <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.disclaimer}>
-          100% gratuit · Pas de compte requis pour commencer
-        </Text>
+        <Text style={styles.disclaimer}>{t('welcome.disclaimer')}</Text>
       </View>
     </SafeAreaView>
   );

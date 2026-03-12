@@ -9,15 +9,7 @@ import { useProfile } from '../../context/ProfileContext';
 import { GUIDES, GUIDE_CATEGORIES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { Guide, GuideCategory } from '../../types';
-
-const SITUATION_LABELS: Record<string, string> = {
-  new_arrival: 'Récemment arrivé(e)',
-  resident:    'Résident(e) établi(e)',
-  student:     'Étudiant(e)',
-  worker:      'Travailleur/se',
-  family:      'Regroupement familial',
-  refugee:     'Demandeur d\'asile',
-};
+import { useTranslation } from '../../i18n';
 
 const CATEGORY_COLORS: Record<GuideCategory, string> = {
   documents: Colors.catDocuments,
@@ -30,12 +22,6 @@ const CATEGORY_COLORS: Record<GuideCategory, string> = {
   education: Colors.catEducation,
 };
 
-const DIFFICULTY_LABEL: Record<string, string> = {
-  easy:   'Facile',
-  medium: 'Intermédiaire',
-  hard:   'Complexe',
-};
-
 const DIFFICULTY_COLOR: Record<string, string> = {
   easy:   Colors.success,
   medium: Colors.warning,
@@ -45,14 +31,13 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 export default function HomeScreen() {
   const { profile } = useProfile();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
 
   if (!profile) return null;
 
   const priorityGuides = GUIDES.filter(g =>
     g.relevantFor.includes(profile.situation)
   ).slice(0, 3);
-
-  const recentlyUpdated = GUIDES.slice(0, 4);
 
   const completedCount = profile.completedGuides.length;
   const totalCount = GUIDES.filter(g => g.relevantFor.includes(profile.situation)).length;
@@ -62,11 +47,10 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
-      {/* Top header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Bonjour 👋</Text>
-          <Text style={styles.headerSub}>{SITUATION_LABELS[profile.situation]}</Text>
+          <Text style={styles.greeting}>{t('home.greeting')}</Text>
+          <Text style={styles.headerSub}>{t(`situationLabel.${profile.situation}`)}</Text>
         </View>
         <TouchableOpacity style={styles.notifBtn}>
           <Ionicons name="notifications-outline" size={22} color={Colors.white} />
@@ -75,28 +59,26 @@ export default function HomeScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* Progress card */}
         <View style={styles.progressCard}>
           <View style={styles.progressTop}>
-            <Text style={styles.progressTitle}>Votre progression</Text>
-            <Text style={styles.progressCount}>{completedCount}/{totalCount} guides</Text>
+            <Text style={styles.progressTitle}>{t('home.progress.title')}</Text>
+            <Text style={styles.progressCount}>{t('home.progress.count', { completed: completedCount, total: totalCount })}</Text>
           </View>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
           </View>
           <Text style={styles.progressHint}>
             {completedCount === 0
-              ? 'Commencez par les guides prioritaires ci-dessous !'
-              : `Continuez — ${totalCount - completedCount} démarches restantes.`}
+              ? t('home.progress.start')
+              : t('home.progress.continue', { remaining: totalCount - completedCount })}
           </Text>
         </View>
 
-        {/* Priority guides */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎯 Prioritaire pour vous</Text>
+            <Text style={styles.sectionTitle}>{t('home.section.priority')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Guides')}>
-              <Text style={styles.seeAll}>Voir tout</Text>
+              <Text style={styles.seeAll}>{t('home.section.seeAll')}</Text>
             </TouchableOpacity>
           </View>
           {priorityGuides.map(guide => (
@@ -112,9 +94,8 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Quick actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚡ Actions rapides</Text>
+          <Text style={styles.sectionTitle}>{t('home.section.quickActions')}</Text>
           <View style={styles.quickGrid}>
             {GUIDE_CATEGORIES.slice(0, 4).map(cat => (
               <TouchableOpacity
@@ -124,13 +105,12 @@ export default function HomeScreen() {
                 activeOpacity={0.75}
               >
                 <Text style={styles.quickEmoji}>{cat.emoji}</Text>
-                <Text style={styles.quickLabel}>{cat.label}</Text>
+                <Text style={styles.quickLabel}>{t(`category.${cat.id}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* AI CTA */}
         <TouchableOpacity
           style={styles.aiCard}
           onPress={() => navigation.navigate('Chat')}
@@ -141,8 +121,8 @@ export default function HomeScreen() {
               <Ionicons name="chatbubble-ellipses" size={22} color={Colors.accent} />
             </View>
             <View>
-              <Text style={styles.aiTitle}>Une question sur la bureaucratie ?</Text>
-              <Text style={styles.aiDesc}>Notre IA répond en français, anglais ou portugais</Text>
+              <Text style={styles.aiTitle}>{t('home.ai.title')}</Text>
+              <Text style={styles.aiDesc}>{t('home.ai.desc')}</Text>
             </View>
           </View>
           <Ionicons name="arrow-forward" size={18} color={Colors.accent} />
@@ -159,6 +139,7 @@ function GuideCard({ guide, isCompleted, onPress }: {
   isCompleted: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const catColor = CATEGORY_COLORS[guide.category];
   return (
     <TouchableOpacity style={styles.guideCard} onPress={onPress} activeOpacity={0.8}>
@@ -169,7 +150,7 @@ function GuideCard({ guide, isCompleted, onPress }: {
           <View style={styles.guideMeta}>
             <View style={[styles.diffBadge, { backgroundColor: DIFFICULTY_COLOR[guide.difficulty] + '22' }]}>
               <Text style={[styles.diffText, { color: DIFFICULTY_COLOR[guide.difficulty] }]}>
-                {DIFFICULTY_LABEL[guide.difficulty]}
+                {t(`difficulty.${guide.difficulty}`)}
               </Text>
             </View>
             {isCompleted && (
@@ -177,12 +158,12 @@ function GuideCard({ guide, isCompleted, onPress }: {
             )}
           </View>
         </View>
-        <Text style={styles.guideTitle}>{guide.title}</Text>
-        <Text style={styles.guideSub}>{guide.subtitle}</Text>
+        <Text style={styles.guideTitle}>{t(`guide.${guide.id}.title`)}</Text>
+        <Text style={styles.guideSub}>{t(`guide.${guide.id}.subtitle`)}</Text>
         <View style={styles.guideFooter}>
           <Ionicons name="time-outline" size={13} color={Colors.textMuted} />
-          <Text style={styles.guideTime}>{guide.estimatedTime}</Text>
-          <Text style={styles.guideSteps}>{guide.steps.length} étapes</Text>
+          <Text style={styles.guideTime}>{t(`guide.${guide.id}.time`)}</Text>
+          <Text style={styles.guideSteps}>{t('home.steps', { count: guide.steps.length })}</Text>
         </View>
       </View>
     </TouchableOpacity>

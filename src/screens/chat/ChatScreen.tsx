@@ -9,31 +9,30 @@ import { ChatMessage } from '../../types';
 import { Colors } from '../../constants/colors';
 import { useProfile } from '../../context/ProfileContext';
 import { callBoussoleAI } from '../../services/ai';
-
-// ─── Suggested questions ────────────────────────────────────────────────────
-const SUGGESTIONS = [
-  "Comment renouveler mon titre de séjour ?",
-  "Je viens d'arriver, par où commencer ?",
-  "Comment obtenir la carte Vitale ?",
-  "Comment ouvrir un compte bancaire sans justificatif de domicile ?",
-  "Quels documents pour l'APL ?",
-];
+import { useTranslation } from '../../i18n';
 
 export default function ChatScreen() {
   const { profile } = useProfile();
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '0',
       role: 'assistant',
-      content:
-        'Bonjour ! Je suis l\'assistant IA de Boussole. Je peux répondre à vos questions sur la bureaucratie française en me basant sur les textes officiels du gouvernement.\n\n' +
-        'Posez-moi votre question en français, anglais, portugais ou espagnol 🌍',
+      content: t('chat.welcome'),
       timestamp: new Date().toISOString(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  const suggestions = [
+    t('chat.suggestion.1'),
+    t('chat.suggestion.2'),
+    t('chat.suggestion.3'),
+    t('chat.suggestion.4'),
+    t('chat.suggestion.5'),
+  ];
 
   const sendMessage = async (text?: string) => {
     const content = (text ?? input).trim();
@@ -72,14 +71,17 @@ export default function ChatScreen() {
             timestamp: new Date().toISOString(),
           })
       );
-    } catch (e) {
+    } catch (e: any) {
+      const errorContent = e.message === 'API_NOT_CONFIGURED'
+        ? t('ai.notConfigured')
+        : t('chat.error');
       setMessages(prev =>
         prev
           .filter(m => m.id !== 'loading')
           .concat({
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: 'Désolé, une erreur s\'est produite. Veuillez réessayer.',
+            content: errorContent,
             timestamp: new Date().toISOString(),
           })
       );
@@ -95,14 +97,13 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.aiAvatar}>
           <Ionicons name="compass" size={18} color={Colors.accent} />
         </View>
         <View>
-          <Text style={styles.headerTitle}>Assistant Boussole</Text>
-          <Text style={styles.headerSub}>Basé sur les lois françaises officielles</Text>
+          <Text style={styles.headerTitle}>{t('chat.headerTitle')}</Text>
+          <Text style={styles.headerSub}>{t('chat.headerSub')}</Text>
         </View>
       </View>
 
@@ -111,7 +112,6 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Messages */}
         <FlatList
           ref={listRef}
           data={messages}
@@ -122,8 +122,8 @@ export default function ChatScreen() {
           ListFooterComponent={
             showSuggestions ? (
               <View style={styles.suggestions}>
-                <Text style={styles.suggestionsTitle}>Questions fréquentes :</Text>
-                {SUGGESTIONS.map((s, i) => (
+                <Text style={styles.suggestionsTitle}>{t('chat.suggestionsTitle')}</Text>
+                {suggestions.map((s, i) => (
                   <TouchableOpacity
                     key={i}
                     style={styles.suggestionChip}
@@ -138,11 +138,10 @@ export default function ChatScreen() {
           }
         />
 
-        {/* Input bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
-            placeholder="Posez votre question..."
+            placeholder={t('chat.placeholder')}
             placeholderTextColor={Colors.textMuted}
             value={input}
             onChangeText={setInput}
