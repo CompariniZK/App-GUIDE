@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   SafeAreaView, StatusBar, Alert,
@@ -7,15 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../../context/ProfileContext';
 import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
-
-const SITUATION_LABELS: Record<string, string> = {
-  new_arrival: 'Récemment arrivé(e)',
-  resident:    'Résident(e) établi(e)',
-  student:     'Étudiant(e) international(e)',
-  worker:      'Travailleur / Travailleuse',
-  family:      'Regroupement familial',
-  refugee:     'Demandeur(se) d\'asile',
-};
+import { AppLanguage } from '../../types';
+import { useTranslation } from '../../i18n';
 
 const LANG_LABELS: Record<string, string> = {
   fr: '🇫🇷 Français',
@@ -25,8 +18,19 @@ const LANG_LABELS: Record<string, string> = {
   ar: '🇲🇦 العربية',
 };
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  BR: '🇧🇷', MA: '🇲🇦', DZ: '🇩🇿', TN: '🇹🇳', PT: '🇵🇹',
+  ES: '🇪🇸', SN: '🇸🇳', ML: '🇲🇱', CM: '🇨🇲', CI: '🇨🇮',
+  NG: '🇳🇬', PH: '🇵🇭', CN: '🇨🇳', IN: '🇮🇳', TR: '🇹🇷',
+  RO: '🇷🇴', PL: '🇵🇱', MX: '🇲🇽', CO: '🇨🇴', OTHER: '🌍',
+};
+
+const LANGUAGES: AppLanguage[] = ['fr', 'en', 'pt', 'es', 'ar'];
+
 export default function ProfileScreen() {
-  const { profile, resetProfile } = useProfile();
+  const { profile, resetProfile, setProfile } = useProfile();
+  const { t } = useTranslation();
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   if (!profile) return null;
 
@@ -37,13 +41,18 @@ export default function ProfileScreen() {
 
   const handleReset = () => {
     Alert.alert(
-      'Réinitialiser le profil',
-      'Cela effacera votre progression et vos préférences. Continuer ?',
+      t('profile.resetTitle'),
+      t('profile.resetMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Réinitialiser', style: 'destructive', onPress: resetProfile },
+        { text: t('profile.resetCancel'), style: 'cancel' },
+        { text: t('profile.resetConfirm'), style: 'destructive', onPress: resetProfile },
       ]
     );
+  };
+
+  const handleChangeLanguage = (lang: AppLanguage) => {
+    setProfile({ ...profile, language: lang });
+    setShowLangPicker(false);
   };
 
   return (
@@ -51,35 +60,32 @@ export default function ProfileScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Profile card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={32} color={Colors.white} />
+            <Text style={{ fontSize: 36 }}>{COUNTRY_FLAGS[profile.nationality] || '🌍'}</Text>
           </View>
-          <Text style={styles.situationLabel}>{SITUATION_LABELS[profile.situation]}</Text>
+          <Text style={styles.situationLabel}>{t(`situationLabel.${profile.situation}`)}</Text>
           <Text style={styles.langLabel}>{LANG_LABELS[profile.language]}</Text>
         </View>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statNum}>{completed}</Text>
-            <Text style={styles.statLabel}>Terminés</Text>
+            <Text style={styles.statLabel}>{t('profile.stats.completed')}</Text>
           </View>
           <View style={[styles.statCard, styles.statCardMiddle]}>
             <Text style={[styles.statNum, { color: Colors.primaryLight }]}>{pct}%</Text>
-            <Text style={styles.statLabel}>Progression</Text>
+            <Text style={styles.statLabel}>{t('profile.stats.progress')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statNum, { color: Colors.accent }]}>{saved}</Text>
-            <Text style={styles.statLabel}>Sauvegardés</Text>
+            <Text style={styles.statLabel}>{t('profile.stats.saved')}</Text>
           </View>
         </View>
 
-        {/* Progress bar */}
         <View style={styles.progressBox}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Guides complétés</Text>
+            <Text style={styles.progressTitle}>{t('profile.guidesCompleted')}</Text>
             <Text style={styles.progressCount}>{completed}/{total}</Text>
           </View>
           <View style={styles.bar}>
@@ -87,33 +93,60 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Settings sections */}
-        <Text style={styles.sectionLabel}>Paramètres</Text>
+        <Text style={styles.sectionLabel}>{t('profile.settings')}</Text>
 
         <View style={styles.menuCard}>
-          <SettingRow icon="globe-outline"       label="Langue de l'app"      value={LANG_LABELS[profile.language]} />
-          <SettingRow icon="person-outline"      label="Ma situation"          value={SITUATION_LABELS[profile.situation]} />
-          <SettingRow icon="notifications-outline" label="Notifications"       value="Activées" />
-          <SettingRow icon="moon-outline"        label="Mode sombre"           value="Désactivé" last />
+          <TouchableOpacity
+            style={styles.row}
+            activeOpacity={0.7}
+            onPress={() => setShowLangPicker(!showLangPicker)}
+          >
+            <Ionicons name="globe-outline" size={20} color={Colors.textSecondary} />
+            <Text style={styles.rowLabel}>{t('profile.language')}</Text>
+            <View style={styles.rowRight}>
+              <Text style={styles.rowValue}>{LANG_LABELS[profile.language]}</Text>
+              <Ionicons name={showLangPicker ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+
+          {showLangPicker && (
+            <View style={styles.langPicker}>
+              {LANGUAGES.map(lang => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.langOption, profile.language === lang && styles.langOptionActive]}
+                  onPress={() => handleChangeLanguage(lang)}
+                >
+                  <Text style={[styles.langOptionText, profile.language === lang && styles.langOptionTextActive]}>
+                    {LANG_LABELS[lang]}
+                  </Text>
+                  {profile.language === lang && (
+                    <Ionicons name="checkmark-circle" size={18} color={Colors.primaryLight} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <SettingRow icon="person-outline" label={t('profile.situation')} value={t(`situationLabel.${profile.situation}`)} />
+          <SettingRow icon="notifications-outline" label={t('profile.notifications')} value={t('profile.notificationsValue')} />
+          <SettingRow icon="moon-outline" label={t('profile.darkMode')} value={t('profile.darkModeValue')} last />
         </View>
 
-        <Text style={styles.sectionLabel}>À propos</Text>
+        <Text style={styles.sectionLabel}>{t('profile.about')}</Text>
 
         <View style={styles.menuCard}>
-          <SettingRow icon="shield-checkmark-outline" label="Politique de confidentialité" />
-          <SettingRow icon="document-text-outline"    label="Conditions d'utilisation" />
-          <SettingRow icon="information-circle-outline" label="Version de l'app"         value="1.0.0" last />
+          <SettingRow icon="shield-checkmark-outline" label={t('profile.privacy')} />
+          <SettingRow icon="document-text-outline" label={t('profile.terms')} />
+          <SettingRow icon="information-circle-outline" label={t('profile.version')} value="1.0.0" last />
         </View>
 
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
           <Ionicons name="refresh-outline" size={16} color={Colors.error} />
-          <Text style={styles.resetText}>Réinitialiser le profil</Text>
+          <Text style={styles.resetText}>{t('profile.reset')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
-          Boussole — Votre guide en France{'\n'}
-          Données issues de service-public.fr et legifrance.gouv.fr
-        </Text>
+        <Text style={styles.footer}>{t('profile.footer')}</Text>
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -197,6 +230,21 @@ const styles = StyleSheet.create({
   rowLabel: { flex: 1, fontSize: 14, color: Colors.textPrimary },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowValue: { fontSize: 13, color: Colors.textSecondary },
+  langPicker: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+    paddingVertical: 4,
+  },
+  langOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 48,
+    paddingVertical: 12,
+  },
+  langOptionActive: { backgroundColor: '#EEF4FF' },
+  langOptionText: { fontSize: 14, color: Colors.textPrimary },
+  langOptionTextActive: { color: Colors.primaryLight, fontWeight: '700' },
   resetBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 14,

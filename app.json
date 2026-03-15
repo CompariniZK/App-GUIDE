@@ -12,5 +12,11 @@
     "android": {
       "package": "com.boussole.app"
     },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

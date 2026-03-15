@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import { MainTabParamList, GuidesStackParamList } from '../types';
 import { Colors } from '../constants/colors';
+import { useTranslation } from '../i18n';
 
 import HomeScreen       from '../screens/home/HomeScreen';
 import GuidesScreen     from '../screens/guides/GuidesScreen';
@@ -21,17 +22,15 @@ function GuidesStack() {
     <Stack.Navigator>
       <Stack.Screen name="GuidesList"   component={GuidesScreen}      options={{ headerShown: false }} />
       <Stack.Screen name="GuideDetail"  component={GuideDetailScreen}
-        options={{
-          headerTitle: '',
-          headerTransparent: true,
-          headerTintColor: Colors.white,
-        }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
 }
 
 export default function MainTabNavigator() {
+  const { t } = useTranslation();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -57,10 +56,10 @@ export default function MainTabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home"    component={HomeScreen}    options={{ tabBarLabel: 'Accueil' }} />
-      <Tab.Screen name="Guides"  component={GuidesStack}   options={{ tabBarLabel: 'Guides' }} />
-      <Tab.Screen name="Chat"    component={ChatScreen}    options={{ tabBarLabel: 'IA Chat' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profil' }} />
+      <Tab.Screen name="Home"    component={HomeScreen}    options={{ tabBarLabel: t('tab.home') }} />
+      <Tab.Screen name="Guides"  component={GuidesStack}   options={{ tabBarLabel: t('tab.guides') }} />
+      <Tab.Screen name="Chat"    component={ChatScreen}    options={{ tabBarLabel: t('tab.chat') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: t('tab.profile') }} />
     </Tab.Navigator>
   );
 }

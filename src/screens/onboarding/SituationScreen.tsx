@@ -4,69 +4,45 @@ import {
   SafeAreaView, StatusBar, ScrollView,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { OnboardingStackParamList, UserSituation, UserProfile } from '../../types';
 import { Colors } from '../../constants/colors';
 import { useProfile } from '../../context/ProfileContext';
+import { getLanguageForNationality, useTranslation } from '../../i18n';
 
-type Props = { navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Situation'> };
+type Props = {
+  navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Situation'>;
+  route: RouteProp<OnboardingStackParamList, 'Situation'>;
+};
 
-const SITUATIONS: { id: UserSituation; emoji: string; title: string; desc: string }[] = [
-  {
-    id: 'new_arrival',
-    emoji: '✈️',
-    title: 'Récemment arrivé(e)',
-    desc: 'Moins de 6 mois en France — je commence tout',
-  },
-  {
-    id: 'resident',
-    emoji: '🏡',
-    title: 'Résident(e) établi(e)',
-    desc: 'Je vis en France depuis plus de 6 mois',
-  },
-  {
-    id: 'student',
-    emoji: '🎓',
-    title: 'Étudiant(e) international(e)',
-    desc: 'Visa étudiant, campus France, université',
-  },
-  {
-    id: 'worker',
-    emoji: '💼',
-    title: 'Travailleur / Travailleuse',
-    desc: 'Visa travail, contrat de travail, salarié(e)',
-  },
-  {
-    id: 'family',
-    emoji: '👨‍👩‍👧',
-    title: 'Regroupement familial',
-    desc: 'Je rejoins un membre de ma famille en France',
-  },
-  {
-    id: 'refugee',
-    emoji: '🕊️',
-    title: 'Demandeur d\'asile / Réfugié(e)',
-    desc: 'Demande de protection internationale (OFPRA)',
-  },
+const SITUATION_IDS: { id: UserSituation; emoji: string }[] = [
+  { id: 'new_arrival', emoji: '✈️' },
+  { id: 'resident', emoji: '🏡' },
+  { id: 'student', emoji: '🎓' },
+  { id: 'worker', emoji: '💼' },
+  { id: 'family', emoji: '👨‍👩‍👧' },
+  { id: 'refugee', emoji: '🕊️' },
 ];
 
-export default function SituationScreen({ navigation }: Props) {
+export default function SituationScreen({ navigation, route }: Props) {
   const [selected, setSelected] = useState<UserSituation | null>(null);
   const { setProfile } = useProfile();
+  const { t } = useTranslation();
+  const { nationality } = route.params;
 
   const handleFinish = async () => {
     if (!selected) return;
     const profile: UserProfile = {
       id: Date.now().toString(),
-      nationality: 'BR', // TODO: pass from previous screen via params
+      nationality,
       situation: selected,
-      language: 'fr',
+      language: getLanguageForNationality(nationality),
       completedGuides: [],
       savedGuides: [],
       createdAt: new Date().toISOString(),
     };
     await setProfile(profile);
-    // Navigation to Main happens automatically via AppNavigator
   };
 
   return (
@@ -85,17 +61,15 @@ export default function SituationScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.titleArea}>
-        <Text style={styles.title}>Quelle est votre situation ?</Text>
-        <Text style={styles.subtitle}>
-          Nous adaptons les guides et conseils selon votre profil.
-        </Text>
+        <Text style={styles.title}>{t('situation.title')}</Text>
+        <Text style={styles.subtitle}>{t('situation.subtitle')}</Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {SITUATIONS.map(s => (
+        {SITUATION_IDS.map(s => (
           <TouchableOpacity
             key={s.id}
             style={[styles.card, selected === s.id && styles.cardSelected]}
@@ -105,9 +79,9 @@ export default function SituationScreen({ navigation }: Props) {
             <Text style={styles.emoji}>{s.emoji}</Text>
             <View style={styles.cardText}>
               <Text style={[styles.cardTitle, selected === s.id && styles.cardTitleSelected]}>
-                {s.title}
+                {t(`situation.${s.id}.title`)}
               </Text>
-              <Text style={styles.cardDesc}>{s.desc}</Text>
+              <Text style={styles.cardDesc}>{t(`situation.${s.id}.desc`)}</Text>
             </View>
             <View style={[styles.radio, selected === s.id && styles.radioSelected]}>
               {selected === s.id && <View style={styles.radioInner} />}
@@ -123,7 +97,7 @@ export default function SituationScreen({ navigation }: Props) {
           disabled={!selected}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnNextText}>Démarrer avec Boussole</Text>
+          <Text style={styles.btnNextText}>{t('situation.cta')}</Text>
           <Ionicons name="compass" size={18} color={Colors.primary} />
         </TouchableOpacity>
       </View>

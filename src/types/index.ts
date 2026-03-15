@@ -74,7 +74,7 @@ export type RootStackParamList = {
 export type OnboardingStackParamList = {
   Welcome: undefined;
   Nationality: undefined;
-  Situation: undefined;
+  Situation: { nationality: string };
 };
 
 export type MainTabParamList = {

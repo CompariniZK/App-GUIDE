@@ -9,6 +9,7 @@ import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { GuideCategory, GuidesStackParamList } from '../../types';
 import { useProfile } from '../../context/ProfileContext';
+import { useTranslation } from '../../i18n';
 
 const CATEGORY_COLORS: Record<GuideCategory, string> = {
   documents: Colors.catDocuments,
@@ -21,9 +22,6 @@ const CATEGORY_COLORS: Record<GuideCategory, string> = {
   education: Colors.catEducation,
 };
 
-const DIFFICULTY_LABEL: Record<string, string> = {
-  easy: 'Facile', medium: 'Intermédiaire', hard: 'Complexe',
-};
 const DIFFICULTY_COLOR: Record<string, string> = {
   easy: Colors.success, medium: Colors.warning, hard: Colors.error,
 };
@@ -33,6 +31,7 @@ export default function GuideDetailScreen() {
   const route = useRoute<RouteProp<GuidesStackParamList, 'GuideDetail'>>();
   const { guideId } = route.params;
   const { profile, markGuideCompleted, toggleSavedGuide } = useProfile();
+  const { t } = useTranslation();
 
   const guide = GUIDES.find(g => g.id === guideId);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export default function GuideDetailScreen() {
 
   const openLink = (url: string) => {
     Linking.openURL(url).catch(() =>
-      Alert.alert('Erreur', 'Impossible d\'ouvrir le lien.')
+      Alert.alert(t('guideDetail.error'), t('guideDetail.errorLink'))
     );
   };
 
@@ -53,7 +52,6 @@ export default function GuideDetailScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={catColor} />
 
-      {/* Hero header */}
       <View style={[styles.hero, { backgroundColor: catColor }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
@@ -66,40 +64,40 @@ export default function GuideDetailScreen() {
           />
         </TouchableOpacity>
         <Text style={styles.heroEmoji}>{guide.emoji}</Text>
-        <Text style={styles.heroTitle}>{guide.title}</Text>
-        <Text style={styles.heroSub}>{guide.subtitle}</Text>
+        <Text style={styles.heroTitle}>{t(`guide.${guide.id}.title`)}</Text>
+        <Text style={styles.heroSub}>{t(`guide.${guide.id}.subtitle`)}</Text>
         <View style={styles.heroBadges}>
           <View style={styles.badge}>
             <Ionicons name="time-outline" size={12} color={Colors.white} />
-            <Text style={styles.badgeText}>{guide.estimatedTime}</Text>
+            <Text style={styles.badgeText}>{t(`guide.${guide.id}.time`)}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: DIFFICULTY_COLOR[guide.difficulty] + '88' }]}>
-            <Text style={styles.badgeText}>{DIFFICULTY_LABEL[guide.difficulty]}</Text>
+            <Text style={styles.badgeText}>{t(`difficulty.${guide.difficulty}`)}</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{guide.steps.length} étapes</Text>
+            <Text style={styles.badgeText}>{t('guideDetail.steps', { count: guide.steps.length })}</Text>
           </View>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Official source */}
         {guide.officialSource && (
           <TouchableOpacity
             style={styles.sourceLink}
             onPress={() => openLink(guide.officialSource!)}
           >
             <Ionicons name="shield-checkmark" size={16} color={Colors.success} />
-            <Text style={styles.sourceLinkText}>Source officielle du gouvernement français</Text>
+            <Text style={styles.sourceLinkText}>{t('guideDetail.source')}</Text>
             <Ionicons name="open-outline" size={14} color={Colors.primaryLight} />
           </TouchableOpacity>
         )}
 
-        {/* Steps */}
-        <Text style={styles.stepsTitle}>Étapes à suivre</Text>
+        <Text style={styles.stepsTitle}>{t('guideDetail.stepsTitle')}</Text>
         {guide.steps.map((step, index) => {
           const isExpanded = expandedStep === step.id;
+          const stepNum = index + 1;
+          const stepKey = `guide.${guide.id}.step${stepNum}`;
           return (
             <View key={step.id} style={styles.stepCard}>
               <TouchableOpacity
@@ -108,9 +106,9 @@ export default function GuideDetailScreen() {
                 activeOpacity={0.8}
               >
                 <View style={[styles.stepNumber, { backgroundColor: catColor }]}>
-                  <Text style={styles.stepNumberText}>{index + 1}</Text>
+                  <Text style={styles.stepNumberText}>{stepNum}</Text>
                 </View>
-                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepTitle}>{t(`${stepKey}.title`)}</Text>
                 <Ionicons
                   name={isExpanded ? 'chevron-up' : 'chevron-down'}
                   size={18}
@@ -120,18 +118,18 @@ export default function GuideDetailScreen() {
 
               {isExpanded && (
                 <View style={styles.stepBody}>
-                  <Text style={styles.stepDesc}>{step.description}</Text>
+                  <Text style={styles.stepDesc}>{t(`${stepKey}.desc`)}</Text>
 
                   {step.documents && step.documents.length > 0 && (
                     <View style={styles.docsBox}>
                       <Text style={styles.docsTitle}>
                         <Ionicons name="document-attach-outline" size={13} color={Colors.primaryLight} />
-                        {'  '}Documents nécessaires
+                        {'  '}{t('guideDetail.documents')}
                       </Text>
-                      {step.documents.map((doc, i) => (
+                      {step.documents.map((_, i) => (
                         <View key={i} style={styles.docRow}>
                           <View style={[styles.docDot, { backgroundColor: catColor }]} />
-                          <Text style={styles.docText}>{doc}</Text>
+                          <Text style={styles.docText}>{t(`${stepKey}.doc${i + 1}`)}</Text>
                         </View>
                       ))}
                     </View>
@@ -140,7 +138,7 @@ export default function GuideDetailScreen() {
                   {step.tip && (
                     <View style={styles.tipBox}>
                       <Ionicons name="bulb-outline" size={15} color={Colors.accent} />
-                      <Text style={styles.tipText}>{step.tip}</Text>
+                      <Text style={styles.tipText}>{t(`${stepKey}.tip`)}</Text>
                     </View>
                   )}
 
@@ -150,7 +148,7 @@ export default function GuideDetailScreen() {
                       onPress={() => openLink(step.officialLink!)}
                     >
                       <Ionicons name="globe-outline" size={14} color={Colors.primaryLight} />
-                      <Text style={styles.officialBtnText}>Accéder au site officiel</Text>
+                      <Text style={styles.officialBtnText}>{t('guideDetail.officialSite')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -159,7 +157,6 @@ export default function GuideDetailScreen() {
           );
         })}
 
-        {/* Complete button */}
         <TouchableOpacity
           style={[styles.completeBtn, isCompleted && styles.completeBtnDone]}
           onPress={() => markGuideCompleted(guide.id)}
@@ -171,7 +168,7 @@ export default function GuideDetailScreen() {
             color={isCompleted ? Colors.white : Colors.success}
           />
           <Text style={[styles.completeBtnText, isCompleted && { color: Colors.white }]}>
-            {isCompleted ? 'Démarche terminée ✓' : 'Marquer comme terminée'}
+            {isCompleted ? t('guideDetail.completed') : t('guideDetail.complete')}
           </Text>
         </TouchableOpacity>
 
