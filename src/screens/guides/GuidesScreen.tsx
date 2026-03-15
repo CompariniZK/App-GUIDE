@@ -63,6 +63,7 @@ export default function GuidesScreen() {
         )}
       </View>
 
+      <View style={styles.catRow}>
       <FlatList
         horizontal
         data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
@@ -82,6 +83,7 @@ export default function GuidesScreen() {
         )}
         ListFooterComponent={<View style={{ width: 20 }} />}
       />
+      </View>
 
       <FlatList
         data={filtered}
@@ -144,7 +146,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary },
-  catList: { paddingLeft: 20, paddingBottom: 12 },
+  catRow: { marginBottom: 12 },
+  catList: { paddingLeft: 20, paddingVertical: 6 },
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
