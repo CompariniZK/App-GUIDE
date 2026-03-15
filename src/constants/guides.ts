@@ -294,6 +294,73 @@ export const GUIDES: Guide[] = [
     ],
   },
   {
+    id: 'caf-aides-familiales',
+    title: 'Aides familiales CAF',
+    subtitle: 'Allocations et prestations pour familles avec enfants',
+    category: 'family',
+    emoji: '👨‍👩‍👧',
+    difficulty: 'medium',
+    estimatedTime: '2–4 semaines',
+    relevantFor: ['new_arrival', 'resident', 'worker', 'family'],
+    lastUpdated: '2026-01',
+    officialSource: 'https://www.caf.fr',
+    steps: [
+      {
+        id: 'step-1',
+        title: 'Vérifier votre éligibilité',
+        description:
+          'Pour bénéficier des aides familiales en France, vous devez avoir un titre de séjour valide '
+          + 'd\'au moins 3 mois, vos enfants doivent résider en France, et vous devez déclarer vos revenus à la CAF.',
+        tip: 'Même avec un titre de séjour récent, vous pouvez déjà faire la demande. N\'attendez pas !',
+      },
+      {
+        id: 'step-2',
+        title: 'Créer votre espace CAF',
+        description:
+          'Rendez-vous sur caf.fr et créez votre espace allocataire. Vous aurez besoin de votre numéro '
+          + 'de sécurité sociale. Si vous n\'en avez pas encore, inscrivez-vous d\'abord à la CPAM.',
+        documents: [
+          'Titre de séjour valide (au moins 3 mois)',
+          'Numéro de sécurité sociale (CPAM)',
+          'RIB (relevé d\'identité bancaire)',
+          'Acte de naissance des enfants (traduction assermentée si né à l\'étranger)',
+          'Justificatif de domicile de moins de 3 mois',
+        ],
+        officialLink: 'https://www.caf.fr',
+      },
+      {
+        id: 'step-3',
+        title: 'Allocations familiales (2 enfants et plus)',
+        description:
+          'Si vous avez 2 enfants ou plus de moins de 20 ans à charge, vous avez droit aux allocations familiales. '
+          + 'Le montant varie selon vos revenus : de 140€ à 178€/mois pour 2 enfants.',
+        tip: 'Les allocations familiales ne sont pas accordées pour le 1er enfant seul. Pour un enfant unique, d\'autres aides existent : la PAJE et le complément de libre choix du mode de garde.',
+      },
+      {
+        id: 'step-4',
+        title: 'PAJE — aide pour les enfants de moins de 3 ans',
+        description:
+          'La Prestation d\'Accueil du Jeune Enfant (PAJE) comprend : une prime à la naissance (≈ 985€) '
+          + 'et une allocation de base mensuelle jusqu\'aux 3 ans de l\'enfant (≈ 185€/mois).',
+        documents: [
+          'Déclaration de grossesse (avant le 3ᵉ mois) ou acte de naissance',
+          'Justificatif de revenus de l\'année précédente (avis d\'imposition)',
+        ],
+        tip: 'Déclarez votre grossesse avant la fin du 3ᵉ mois pour toucher la prime à la naissance. Passé ce délai, la prime est perdue !',
+        officialLink: 'https://www.caf.fr/allocataires/aides-et-demarches/droits-et-prestations/petite-enfance/la-paje-prestation-d-accueil-du-jeune-enfant',
+      },
+      {
+        id: 'step-5',
+        title: 'Complément familial (3 enfants et plus)',
+        description:
+          'Si vous avez 3 enfants ou plus, tous âgés de 3 à 21 ans, vous pouvez recevoir le complément familial '
+          + '(≈ 180€/mois) sous conditions de ressources.',
+        tip: 'Le simulateur CAF en ligne calcule gratuitement toutes vos aides potentielles en moins de 5 minutes. C\'est la première étape conseillée avant toute démarche.',
+        officialLink: 'https://wwwd.caf.fr/wps/portal/caffr/aidesetservices/lesservicesenligne/estimervosdroits',
+      },
+    ],
+  },
+  {
     id: 'france-travail-inscription',
     title: 'S\'inscrire à France Travail',
     subtitle: 'Accéder aux allocations chômage (ARE) et aux formations',

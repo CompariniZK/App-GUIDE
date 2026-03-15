@@ -80,6 +80,7 @@ export default function GuidesScreen() {
             </Text>
           </TouchableOpacity>
         )}
+        ListFooterComponent={<View style={{ width: 20 }} />}
       />
 
       <FlatList
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary },
-  catList: { paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
+  catList: { paddingLeft: 20, paddingBottom: 12 },
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -154,6 +155,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
     gap: 6,
+    marginRight: 8,
   },
   catChipActive: { backgroundColor: Colors.primaryLight, borderColor: Colors.primaryLight },
   catEmoji: { fontSize: 14 },
