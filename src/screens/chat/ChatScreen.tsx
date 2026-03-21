@@ -1,15 +1,42 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   FlatList, SafeAreaView, StatusBar, KeyboardAvoidingView,
   Platform, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChatMessage } from '../../types';
 import { Colors } from '../../constants/colors';
 import { useProfile } from '../../context/ProfileContext';
 import { callBoussoleAI } from '../../services/ai';
 import { useTranslation } from '../../i18n';
+
+const DAILY_LIMIT = 20;
+const STORAGE_KEY = '@boussole/ai_usage';
+
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+}
+
+async function getDailyUsage(): Promise<{ count: number; date: string }> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return { count: 0, date: getTodayStr() };
+    const parsed = JSON.parse(raw);
+    if (parsed.date !== getTodayStr()) return { count: 0, date: getTodayStr() };
+    return parsed;
+  } catch {
+    return { count: 0, date: getTodayStr() };
+  }
+}
+
+async function incrementDailyUsage(): Promise<number> {
+  const usage = await getDailyUsage();
+  const updated = { count: usage.count + 1, date: getTodayStr() };
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  return updated.count;
+}
 
 export default function ChatScreen() {
   const { profile } = useProfile();
@@ -24,7 +51,14 @@ export default function ChatScreen() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
   const listRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    getDailyUsage().then(u => setUsageCount(u.count));
+  }, []);
+
+  const limitReached = usageCount >= DAILY_LIMIT;
 
   const suggestions = [
     t('chat.suggestion.1'),
@@ -37,6 +71,17 @@ export default function ChatScreen() {
   const sendMessage = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || isLoading) return;
+
+    if (limitReached) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: t('chat.limitReached'),
+        timestamp: new Date().toISOString(),
+      }]);
+      return;
+    }
+
     setInput('');
 
     const userMsg: ChatMessage = {
@@ -61,6 +106,8 @@ export default function ChatScreen() {
 
     try {
       const reply = await callBoussoleAI(content, messages, profile);
+      const newCount = await incrementDailyUsage();
+      setUsageCount(newCount);
       setMessages(prev =>
         prev
           .filter(m => m.id !== 'loading')
@@ -101,9 +148,15 @@ export default function ChatScreen() {
         <View style={styles.aiAvatar}>
           <Ionicons name="compass" size={18} color={Colors.accent} />
         </View>
-        <View>
+        <View style={styles.flex}>
           <Text style={styles.headerTitle}>{t('chat.headerTitle')}</Text>
           <Text style={styles.headerSub}>{t('chat.headerSub')}</Text>
+        </View>
+        <View style={[styles.usageBadge, limitReached && styles.usageBadgeLimit]}>
+          <Ionicons name="flash" size={11} color={limitReached ? '#ff6b6b' : Colors.accent} />
+          <Text style={[styles.usageText, limitReached && styles.usageTextLimit]}>
+            {usageCount}/{DAILY_LIMIT}
+          </Text>
         </View>
       </View>
 
@@ -139,27 +192,36 @@ export default function ChatScreen() {
         />
 
         <View style={styles.inputBar}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('chat.placeholder')}
-            placeholderTextColor={Colors.textMuted}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={500}
-            onSubmitEditing={() => sendMessage()}
-          />
-          <TouchableOpacity
-            style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled]}
-            onPress={() => sendMessage()}
-            disabled={!input.trim() || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <Ionicons name="send" size={18} color={Colors.white} />
-            )}
-          </TouchableOpacity>
+          {limitReached ? (
+            <View style={styles.limitBar}>
+              <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
+              <Text style={styles.limitBarText}>{t('chat.limitReachedBar')}</Text>
+            </View>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder={t('chat.placeholder')}
+                placeholderTextColor={Colors.textMuted}
+                value={input}
+                onChangeText={setInput}
+                multiline
+                maxLength={500}
+                onSubmitEditing={() => sendMessage()}
+              />
+              <TouchableOpacity
+                style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled]}
+                onPress={() => sendMessage()}
+                disabled={!input.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Ionicons name="send" size={18} color={Colors.white} />
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -281,4 +343,17 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: Colors.border },
+  usageBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(245,166,35,0.15)',
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
+  },
+  usageBadgeLimit: { backgroundColor: 'rgba(255,107,107,0.15)' },
+  usageText: { fontSize: 11, fontWeight: '700', color: Colors.accent },
+  usageTextLimit: { color: '#ff6b6b' },
+  limitBar: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 8, paddingVertical: 10,
+  },
+  limitBarText: { fontSize: 13, color: Colors.textMuted },
 });

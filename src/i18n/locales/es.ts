@@ -113,6 +113,8 @@ const es: Record<string, string> = {
   'chat.suggestionsTitle': 'Preguntas frecuentes:',
   'chat.placeholder': 'Haz tu pregunta...',
   'chat.error': 'Lo siento, ocurrió un error. Por favor, inténtalo de nuevo.',
+  'chat.limitReached': '⚠️ Has alcanzado el límite de 20 preguntas por día. Vuelve mañana para seguir usando el asistente IA.',
+  'chat.limitReachedBar': 'Límite diario alcanzado — vuelve mañana',
   'chat.suggestion.1': '¿Cómo renovar mi permiso de residencia?',
   'chat.suggestion.2': 'Acabo de llegar, ¿por dónde empiezo?',
   'chat.suggestion.3': '¿Cómo obtener la carte Vitale?',
