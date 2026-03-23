@@ -10,7 +10,8 @@
       "Bash(npm install expo@~54.0.0 --legacy-peer-deps)",
       "Bash(npm install react-native-worklets --legacy-peer-deps)",
       "Bash(npx tsc --noEmit --strict src/i18n/locales/fr.ts)",
-      "Bash(wc -l src/i18n/locales/*.ts)"
+      "Bash(wc -l src/i18n/locales/*.ts)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
