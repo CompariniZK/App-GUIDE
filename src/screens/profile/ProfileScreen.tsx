@@ -9,6 +9,7 @@ import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { AppLanguage } from '../../types';
 import { useTranslation } from '../../i18n';
+import { CITIES, getCityById } from '../../constants/cities';
 
 const LANG_LABELS: Record<string, string> = {
   fr: '🇫🇷 Français',
@@ -28,9 +29,10 @@ const COUNTRY_FLAGS: Record<string, string> = {
 const LANGUAGES: AppLanguage[] = ['fr', 'en', 'pt', 'es', 'ar'];
 
 export default function ProfileScreen() {
-  const { profile, resetProfile, setProfile } = useProfile();
+  const { profile, resetProfile, setProfile, setCity } = useProfile();
   const { t } = useTranslation();
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
 
   if (!profile) return null;
 
@@ -131,6 +133,74 @@ export default function ProfileScreen() {
           <SettingRow icon="person-outline" label={t('profile.situation')} value={t(`situationLabel.${profile.situation}`)} />
           <SettingRow icon="notifications-outline" label={t('profile.notifications')} value={t('profile.notificationsValue')} />
           <SettingRow icon="moon-outline" label={t('profile.darkMode')} value={t('profile.darkModeValue')} last />
+        </View>
+
+        {/* ─── City / Ville Mode ─────────────────────────── */}
+        <Text style={styles.sectionLabel}>🏙 Mode Ville</Text>
+
+        <View style={styles.menuCard}>
+          <TouchableOpacity
+            style={styles.row}
+            activeOpacity={0.7}
+            onPress={() => setShowCityPicker(!showCityPicker)}
+          >
+            <Ionicons name="location-outline" size={20} color={Colors.textSecondary} />
+            <Text style={styles.rowLabel}>Ville partenaire</Text>
+            <View style={styles.rowRight}>
+              <Text style={styles.rowValue}>
+                {profile.cityId ? getCityById(profile.cityId)?.name ?? profile.cityId : 'Aucune'}
+              </Text>
+              <Ionicons name={showCityPicker ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+
+          {showCityPicker && (
+            <View style={styles.langPicker}>
+              {/* Option: no city */}
+              <TouchableOpacity
+                style={[styles.langOption, !profile.cityId && styles.langOptionActive]}
+                onPress={async () => {
+                  await setCity('');
+                  setShowCityPicker(false);
+                }}
+              >
+                <Text style={[styles.langOptionText, !profile.cityId && styles.langOptionTextActive]}>
+                  🌍 Aucune ville
+                </Text>
+                {!profile.cityId && (
+                  <Ionicons name="checkmark-circle" size={18} color={Colors.primaryLight} />
+                )}
+              </TouchableOpacity>
+
+              {/* All configured cities */}
+              {CITIES.map(city => (
+                <TouchableOpacity
+                  key={city.id}
+                  style={[styles.langOption, profile.cityId === city.id && styles.langOptionActive]}
+                  onPress={async () => {
+                    await setCity(city.id);
+                    setShowCityPicker(false);
+                  }}
+                >
+                  <Text style={[styles.langOptionText, profile.cityId === city.id && styles.langOptionTextActive]}>
+                    🏛 {city.name} ({city.department})
+                  </Text>
+                  {profile.cityId === city.id && (
+                    <Ionicons name="checkmark-circle" size={18} color={Colors.primaryLight} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {profile.cityId && (
+            <View style={styles.cityActiveRow}>
+              <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+              <Text style={styles.cityActiveText}>
+                Mode ville activé — les ressources locales apparaissent sur l'accueil
+              </Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.sectionLabel}>{t('profile.about')}</Text>
@@ -245,6 +315,22 @@ const styles = StyleSheet.create({
   langOptionActive: { backgroundColor: '#EEF4FF' },
   langOptionText: { fontSize: 14, color: Colors.textPrimary },
   langOptionTextActive: { color: Colors.primaryLight, fontWeight: '700' },
+  cityActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.success + '12',
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+  },
+  cityActiveText: {
+    fontSize: 12,
+    color: Colors.success,
+    flex: 1,
+    fontWeight: '600',
+  },
   resetBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 14,

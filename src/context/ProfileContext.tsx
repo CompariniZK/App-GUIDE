@@ -12,6 +12,7 @@ interface ProfileContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   markGuideCompleted: (guideId: string) => Promise<void>;
   toggleSavedGuide: (guideId: string) => Promise<void>;
+  setCity: (cityId: string) => Promise<void>;
   resetProfile: () => Promise<void>;
 }
 
@@ -63,6 +64,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     await updateProfile({ savedGuides: saved });
   };
 
+  const setCity = async (cityId: string) => {
+    if (!cityId) {
+      // Remove cityId from profile
+      const updated = { ...profile! };
+      delete updated.cityId;
+      await setProfile(updated);
+    } else {
+      await updateProfile({ cityId });
+    }
+  };
+
   const resetProfile = async () => {
     await AsyncStorage.removeItem(STORAGE_KEY);
     setProfileState(null);
@@ -78,6 +90,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         updateProfile,
         markGuideCompleted,
         toggleSavedGuide,
+        setCity,
         resetProfile,
       }}
     >

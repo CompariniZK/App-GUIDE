@@ -17,6 +17,12 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "eeb224f1-7b7f-4322-9ac4-2944e75afb8f"
+      }
+    },
+    "owner": "comparini_04"
   }
 }

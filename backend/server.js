@@ -145,6 +145,28 @@ Source officielle : www.francetravail.fr
   },
 ];
 
+// ─── City-Specific Knowledge ─────────────────────────────────────────────────
+const CITY_CONTEXTS = {
+  'la-roche-sur-yon': `
+CONTEXTE LOCAL — La Roche-sur-Yon (Vendée, 85) :
+
+SERVICES UTILES :
+- CCAS : 02 51 47 48 57 | 10 rue Delille | Lun-Mer 8h30-17h30, Jeu 8h30-12h30, Ven 8h30-17h00
+- Préfecture de la Vendée : 02 51 36 70 85 | 29 rue Delille | www.vendee.gouv.fr
+- France Terre d'Asile (SPADA) : accueil des demandeurs d'asile
+- Cimade-Vendée : aide juridique et accès aux droits des migrants
+- CAF de la Vendée : www.caf.fr (département 85)
+- CPAM de la Vendée : www.ameli.fr (département 85)
+
+INFORMATIONS LOCALES :
+- Population : ~55 000 habitants dont ~3 954 étrangers (7%)
+- La préfecture de la Vendée gère les titres de séjour pour tout le département
+- Les rendez-vous ANEF sont traités à la préfecture de La Roche-sur-Yon
+
+Quand c'est pertinent, mentionne ces ressources locales avec leurs coordonnées exactes.
+`,
+};
+
 // ─── Helper Functions ──────────────────────────────────────────────────────
 function retrieveRelevantDocuments(query) {
   /**
@@ -200,7 +222,7 @@ function buildSystemPrompt(retrievedDocs) {
  */
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, language = 'fr' } = req.body;
+    const { message, language = 'fr', cityId } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
@@ -209,8 +231,9 @@ app.post('/api/chat', async (req, res) => {
     // Step 1: Retrieve relevant documents
     const relevantDocs = retrieveRelevantDocuments(message);
 
-    // Step 2: Build system prompt with context
-    const systemPrompt = buildSystemPrompt(relevantDocs);
+    // Step 2: Build system prompt with context + city
+    const cityContext = cityId && CITY_CONTEXTS[cityId] ? CITY_CONTEXTS[cityId] : '';
+    const systemPrompt = buildSystemPrompt(relevantDocs) + cityContext;
 
     // Step 3: Call Claude API
     const response = await client.messages.create({

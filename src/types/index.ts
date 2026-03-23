@@ -16,6 +16,7 @@ export interface UserProfile {
   situation: UserSituation;
   language: AppLanguage;
   arrivalYear?: number;
+  cityId?: string;            // ex: 'la-roche-sur-yon'
   completedGuides: string[];
   savedGuides: string[];
   createdAt: string;

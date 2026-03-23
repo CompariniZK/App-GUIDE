@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../../context/ProfileContext';
 import { GUIDES, GUIDE_CATEGORIES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
+import { getCityById, RESOURCE_ICONS } from '../../constants/cities';
 import { Guide, GuideCategory } from '../../types';
 import { useTranslation } from '../../i18n';
 
@@ -34,6 +35,8 @@ export default function HomeScreen() {
   const { t } = useTranslation();
 
   if (!profile) return null;
+
+  const city = profile.cityId ? getCityById(profile.cityId) : null;
 
   const priorityGuides = GUIDES.filter(g =>
     g.relevantFor.includes(profile.situation)
@@ -73,6 +76,25 @@ export default function HomeScreen() {
               : t('home.progress.continue', { remaining: totalCount - completedCount })}
           </Text>
         </View>
+
+        {city && (
+          <View style={styles.cityCard}>
+            <View style={styles.cityHeader}>
+              <Text style={styles.cityBadge}>{city.name}</Text>
+            </View>
+            {city.resources.map((r, i) => (
+              <View key={i} style={styles.cityRow}>
+                <Text style={styles.cityIcon}>{RESOURCE_ICONS[r.type]}</Text>
+                <View style={styles.cityInfo}>
+                  <Text style={styles.cityName}>{r.name}</Text>
+                  {r.phone && <Text style={styles.cityDetail}>{r.phone}</Text>}
+                  {r.address && <Text style={styles.cityDetail}>{r.address}</Text>}
+                  {r.hours && <Text style={styles.cityHours}>{r.hours}</Text>}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -264,4 +286,38 @@ const styles = StyleSheet.create({
   },
   aiTitle: { fontSize: 14, fontWeight: '700', color: Colors.white, marginBottom: 2 },
   aiDesc: { fontSize: 12, color: 'rgba(255,255,255,0.65)' },
+  // ─── City Card ──────────────────────
+  cityCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primaryLight,
+  },
+  cityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  cityBadge: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
+  cityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.divider,
+    gap: 10,
+  },
+  cityIcon: { fontSize: 18, marginTop: 2 },
+  cityInfo: { flex: 1 },
+  cityName: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
+  cityDetail: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
+  cityHours: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
 });
