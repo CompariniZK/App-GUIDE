@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  SafeAreaView, StatusBar, TextInput,
+  SafeAreaView, StatusBar, TextInput, Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,112 +39,139 @@ export default function GuidesScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
+      {/* ─── HEADER (azul) ───────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('guides.title')}</Text>
         <Text style={styles.headerSub}>{t('guides.count', { count: GUIDES.length })}</Text>
       </View>
 
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color={Colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('guides.search')}
-          placeholderTextColor={Colors.textMuted}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
-          </TouchableOpacity>
-        )}
+      {/* ─── SEARCH BAR (ainda na zona azul) ─────────────────────────── */}
+      <View style={styles.searchWrap}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={18} color={Colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('guides.search')}
+            placeholderTextColor={Colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      <FlatList
-        horizontal
-        data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
-        keyExtractor={i => i.id}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.catList}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.catChip, selectedCat === item.id && styles.catChipActive]}
-            onPress={() => setSelectedCat(item.id)}
-          >
-            <Text style={styles.catEmoji}>{item.emoji}</Text>
-            <Text style={[styles.catLabel, selectedCat === item.id && styles.catLabelActive]}>
-              {item.id === 'all' ? t('guides.filterAll') : t(`category.${item.id}`)}
-            </Text>
-          </TouchableOpacity>
-        )}
-        ListFooterComponent={<View style={{ width: 20 }} />}
-      />
+      {/* ─── CONTEÚDO (branco, canto superior arredondado) ───────────── */}
+      <View style={styles.contentWrap}>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={g => g.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyText}>{t('guides.empty')}</Text>
-          </View>
-        )}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('GuideDetail', { guideId: item.id })}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.cardLeft, { backgroundColor: CATEGORY_COLORS[item.category] + '22' }]}>
-              <Text style={styles.cardEmoji}>{item.emoji}</Text>
+        {/* Category chips */}
+        <FlatList
+          horizontal
+          data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
+          keyExtractor={i => i.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catList}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.catChip, selectedCat === item.id && styles.catChipActive]}
+              onPress={() => setSelectedCat(item.id)}
+            >
+              <Text style={styles.catEmoji}>{item.emoji}</Text>
+              <Text style={[styles.catLabel, selectedCat === item.id && styles.catLabelActive]}>
+                {item.id === 'all' ? t('guides.filterAll') : t(`category.${item.id}`)}
+              </Text>
+            </TouchableOpacity>
+          )}
+          ListFooterComponent={<View style={{ width: 20 }} />}
+        />
+
+        {/* Guide list */}
+        <FlatList
+          data={filtered}
+          keyExtractor={g => g.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🔍</Text>
+              <Text style={styles.emptyText}>{t('guides.empty')}</Text>
             </View>
-            <View style={styles.cardBody}>
-              <Text style={styles.cardTitle}>{t(`guide.${item.id}.title`)}</Text>
-              <Text style={styles.cardSub} numberOfLines={1}>{t(`guide.${item.id}.subtitle`)}</Text>
-              <View style={styles.cardMeta}>
-                <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
-                <Text style={styles.cardTime}>{t(`guide.${item.id}.time`)}</Text>
-                <Text style={styles.cardDot}>·</Text>
-                <Text style={styles.cardSteps}>{t('guideDetail.steps', { count: item.steps.length })}</Text>
+          )}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('GuideDetail', { guideId: item.id })}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.cardLeft, { backgroundColor: CATEGORY_COLORS[item.category] + '22' }]}>
+                <Text style={styles.cardEmoji}>{item.emoji}</Text>
               </View>
-            </View>
-            {profile?.completedGuides.includes(item.id) ? (
-              <Ionicons name="checkmark-circle" size={22} color={Colors.success} />
-            ) : (
-              <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-            )}
-          </TouchableOpacity>
-        )}
-      />
+              <View style={styles.cardBody}>
+                <Text style={styles.cardTitle}>{t(`guide.${item.id}.title`)}</Text>
+                <Text style={styles.cardSub} numberOfLines={1}>{t(`guide.${item.id}.subtitle`)}</Text>
+                <View style={styles.cardMeta}>
+                  <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
+                  <Text style={styles.cardTime}>{t(`guide.${item.id}.time`)}</Text>
+                  <Text style={styles.cardDot}>·</Text>
+                  <Text style={styles.cardSteps}>{t('guideDetail.steps', { count: item.steps.length })}</Text>
+                </View>
+              </View>
+              {profile?.completedGuides.includes(item.id) ? (
+                <Ionicons name="checkmark-circle" size={22} color={Colors.success} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              )}
+            </TouchableOpacity>
+          )}
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 12 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
-  headerSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  safe: { flex: 1, backgroundColor: Colors.primary },
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 16 : 10,
+    paddingBottom: 14,
+  },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: Colors.white, letterSpacing: -0.5 },
+  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+
+  // ── Search ──────────────────────────────────────────────────────────────────
+  searchWrap: { paddingHorizontal: 20, paddingBottom: 16 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    marginHorizontal: 20,
-    marginBottom: 12,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
     gap: 10,
   },
   searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary },
-  catList: { paddingLeft: 20, paddingBottom: 12 },
+
+  // ── Content wrap (branco, canto superior arredondado) ────────────────────────
+  contentWrap: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    overflow: 'hidden',
+    paddingTop: 6,
+  },
+
+  // ── Category chips ──────────────────────────────────────────────────────────
+  catList: { paddingLeft: 20, paddingRight: 20, paddingVertical: 10 },
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -161,6 +188,8 @@ const styles = StyleSheet.create({
   catEmoji: { fontSize: 14 },
   catLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   catLabelActive: { color: Colors.white },
+
+  // ── Guide list ──────────────────────────────────────────────────────────────
   list: { paddingHorizontal: 20, gap: 10, paddingBottom: 24 },
   card: {
     backgroundColor: Colors.white,
