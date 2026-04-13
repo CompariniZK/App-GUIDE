@@ -150,7 +150,7 @@ const en: Record<string, string> = {
   'tab.profile': 'Profile',
 
   // AI
-  'ai.notConfigured': 'The AI assistant is not yet configured.\n\nTo activate it, add your Anthropic API key in the .env file:\nEXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-xxxxx\n\nIn the meantime, check our Guides in the dedicated tab!',
+  'ai.notConfigured': 'The AI assistant is not yet configured.\n\nTo activate it, add your free Groq API key in the .env file:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nGet your key at console.groq.com\n\nIn the meantime, check our Guides in the dedicated tab!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renew your residence permit',

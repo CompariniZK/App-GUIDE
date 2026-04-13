@@ -150,7 +150,7 @@ const ar: Record<string, string> = {
   'tab.profile': 'الملف الشخصي',
 
   // AI Service
-  'ai.notConfigured': 'لم يتم تكوين مساعد الذكاء الاصطناعي بعد.\n\nلتفعيله، أضف مفتاح API الخاص بك من Anthropic في ملف .env:\nEXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-xxxxx\n\nفي انتظار ذلك، تصفح أدلتنا في التبويب المخصص!',
+  'ai.notConfigured': 'لم يتم تكوين مساعد الذكاء الاصطناعي بعد.\n\nلتفعيله، أضف مفتاح API المجاني من Groq في ملف .env:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nاحصل على مفتاحك من console.groq.com\n\nفي انتظار ذلك، تصفح أدلتنا في التبويب المخصص!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'تجديد بطاقة الإقامة',

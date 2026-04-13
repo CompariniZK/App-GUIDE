@@ -150,7 +150,7 @@ const es: Record<string, string> = {
   'tab.profile': 'Perfil',
 
   // AI
-  'ai.notConfigured': 'El asistente de IA aún no está configurado.\n\nPara activarlo, añade tu clave API de Anthropic en el archivo .env:\nEXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-xxxxx\n\nMientras tanto, ¡consulta nuestras Guías en la pestaña dedicada!',
+  'ai.notConfigured': 'El asistente de IA aún no está configurado.\n\nPara activarlo, añade tu clave API de Groq (gratuita) en el archivo .env:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nObtén tu clave en console.groq.com\n\n¡Mientras tanto, consulta nuestras Guías en la pestaña dedicada!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renovar tu permiso de residencia',

@@ -1,7 +1,7 @@
 import { ChatMessage, UserProfile } from '../types';
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const LANG_NAMES: Record<string, string> = {
   fr: 'français',
@@ -38,51 +38,53 @@ export async function callBoussoleAI(
   history: ChatMessage[],
   profile?: UserProfile | null,
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
+  if (!GROQ_API_KEY) {
     throw new Error('API_NOT_CONFIGURED');
   }
 
-  // Build conversation history in Gemini format
-  const contents = history
+  // Build conversation in OpenAI-compatible format (Groq uses the same format)
+  const messages: { role: string; content: string }[] = [
+    { role: 'system', content: buildSystemPrompt(profile) },
+  ];
+
+  // Add conversation history
+  history
     .filter(m => !m.isLoading && m.id !== '0')
-    .map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    }));
+    .forEach(m => {
+      messages.push({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+      });
+    });
 
   // Add current user message
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }],
-  });
+  messages.push({ role: 'user', content: userMessage });
 
-  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(GROQ_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+    },
     body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: buildSystemPrompt(profile) }],
-      },
-      contents,
-      generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.7,
-      },
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: 1024,
+      temperature: 0.7,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('Gemini API error:', error);
+    console.error('Groq API error:', error);
     throw new Error(`API error: ${response.status}`);
   }
 
   const data = await response.json();
 
-  // Extract text from Gemini response
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data?.choices?.[0]?.message?.content;
   if (!text) {
-    throw new Error('Empty response from Gemini');
+    throw new Error('Empty response from AI');
   }
 
   return text;
