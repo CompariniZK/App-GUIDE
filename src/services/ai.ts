@@ -1,6 +1,7 @@
 import { ChatMessage, UserProfile } from '../types';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
 const LANG_NAMES: Record<string, string> = {
   fr: 'français',
@@ -37,41 +38,52 @@ export async function callBoussoleAI(
   history: ChatMessage[],
   profile?: UserProfile | null,
 ): Promise<string> {
-  if (!ANTHROPIC_API_KEY) {
+  if (!GEMINI_API_KEY) {
     throw new Error('API_NOT_CONFIGURED');
   }
 
-  const messages = history
+  // Build conversation history in Gemini format
+  const contents = history
     .filter(m => !m.isLoading && m.id !== '0')
     .map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }],
     }));
 
-  messages.push({ role: 'user', content: userMessage });
+  // Add current user message
+  contents.push({
+    role: 'user',
+    parts: [{ text: userMessage }],
+  });
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: buildSystemPrompt(profile),
-      messages,
+      systemInstruction: {
+        parts: [{ text: buildSystemPrompt(profile) }],
+      },
+      contents,
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.7,
+      },
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('Claude API error:', error);
+    console.error('Gemini API error:', error);
     throw new Error(`API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.content[0].text;
+
+  // Extract text from Gemini response
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Empty response from Gemini');
+  }
+
+  return text;
 }
