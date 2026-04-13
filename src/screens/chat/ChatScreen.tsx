@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     gap: 8,
   },
-  suggestionText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
+  suggestionText: { flex: 1, flexShrink: 1, fontSize: 13, color: Colors.textPrimary },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',

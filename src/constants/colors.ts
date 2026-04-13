@@ -27,6 +27,12 @@ export const Colors = {
   textMuted: '#94A3B8',     // Light gray
   textInverse: '#FFFFFF',
 
+  // UI states
+  selectedBg: '#EEF4FF',    // Light blue — selected items
+  tipBg: '#FFF8ED',         // Light orange — tip boxes
+  tipText: '#92600A',       // Dark orange — tip text
+  successBg: 'rgba(16,185,129,0.07)', // Faint green background
+
   // Category colors (for guide topics)
   catDocuments: '#3B82F6',   // Blue — documents
   catHealth: '#EF4444',      // Red — santé

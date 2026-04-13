@@ -76,6 +76,7 @@ export type OnboardingStackParamList = {
   Welcome: undefined;
   Nationality: undefined;
   Situation: { nationality: string };
+  City: { nationality: string; situation: UserSituation };
 };
 
 export type MainTabParamList = {

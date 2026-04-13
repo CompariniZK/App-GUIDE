@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  SafeAreaView, StatusBar, TextInput, Platform,
+  StatusBar, TextInput, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { GUIDES, GUIDE_CATEGORIES } from '../../constants/guides';
@@ -39,16 +40,19 @@ export default function GuidesScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary}
+        translucent={Platform.OS === 'android'} />
 
-      {/* ─── HEADER (azul) ───────────────────────────────────────────── */}
+      {/* ─── HEADER (blue) ──────────────────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('guides.title')}</Text>
-        <Text style={styles.headerSub}>{t('guides.count', { count: GUIDES.length })}</Text>
+        <View>
+          <Text style={styles.headerTitle}>{t('guides.title')}</Text>
+          <Text style={styles.headerSub}>{t('guides.count', { count: GUIDES.length })}</Text>
+        </View>
       </View>
 
-      {/* ─── SEARCH BAR (ainda na zona azul) ─────────────────────────── */}
+      {/* ─── SEARCH BAR (still in blue zone) ────────────────────────── */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color={Colors.textMuted} />
@@ -67,29 +71,31 @@ export default function GuidesScreen() {
         </View>
       </View>
 
-      {/* ─── CONTEÚDO (branco, canto superior arredondado) ───────────── */}
+      {/* ─── CONTENT (white, rounded top) ───────────────────────────── */}
       <View style={styles.contentWrap}>
 
         {/* Category chips */}
-        <FlatList
-          horizontal
-          data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
-          keyExtractor={i => i.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.catList}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.catChip, selectedCat === item.id && styles.catChipActive]}
-              onPress={() => setSelectedCat(item.id)}
-            >
-              <Text style={styles.catEmoji}>{item.emoji}</Text>
-              <Text style={[styles.catLabel, selectedCat === item.id && styles.catLabelActive]}>
-                {item.id === 'all' ? t('guides.filterAll') : t(`category.${item.id}`)}
-              </Text>
-            </TouchableOpacity>
-          )}
-          ListFooterComponent={<View style={{ width: 20 }} />}
-        />
+        <View style={styles.catRow}>
+          <FlatList
+            horizontal
+            data={[{ id: 'all', emoji: '📋' }, ...GUIDE_CATEGORIES]}
+            keyExtractor={i => i.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.catList}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.catChip, selectedCat === item.id && styles.catChipActive]}
+                onPress={() => setSelectedCat(item.id)}
+              >
+                <Text style={styles.catEmoji}>{item.emoji}</Text>
+                <Text style={[styles.catLabel, selectedCat === item.id && styles.catLabelActive]}>
+                  {item.id === 'all' ? t('guides.filterAll') : t(`category.${item.id}`)}
+                </Text>
+              </TouchableOpacity>
+            )}
+            ListFooterComponent={<View style={{ width: 20 }} />}
+          />
+        </View>
 
         {/* Guide list */}
         <FlatList
@@ -109,7 +115,7 @@ export default function GuidesScreen() {
               onPress={() => navigation.navigate('GuideDetail', { guideId: item.id })}
               activeOpacity={0.8}
             >
-              <View style={[styles.cardLeft, { backgroundColor: CATEGORY_COLORS[item.category] + '22' }]}>
+              <View style={[styles.cardLeft, { backgroundColor: CATEGORY_COLORS[item.category] + '18' }]}>
                 <Text style={styles.cardEmoji}>{item.emoji}</Text>
               </View>
               <View style={styles.cardBody}>
@@ -160,17 +166,17 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary },
 
-  // ── Content wrap (branco, canto superior arredondado) ────────────────────────
+  // ── Content wrap (white, rounded top) ───────────────────────────────────────
   contentWrap: {
     flex: 1,
     backgroundColor: Colors.background,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     overflow: 'hidden',
-    paddingTop: 6,
   },
 
   // ── Category chips ──────────────────────────────────────────────────────────
+  catRow: { marginTop: 6, marginBottom: 8 },
   catList: { paddingLeft: 20, paddingRight: 20, paddingVertical: 10 },
   catChip: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ const pt: Record<string, string> = {
   'nationality.subtitle': 'Isso nos ajuda a personalizar as informa\u00e7\u00f5es de acordo com sua situa\u00e7\u00e3o.',
   'nationality.search': 'Buscar um pa\u00eds...',
   'nationality.continue': 'Continuar',
+  'country.FR': 'França',
   'country.BR': 'Brasil',
   'country.MA': 'Marrocos',
   'country.DZ': 'Arg\u00e9lia',
@@ -52,19 +53,33 @@ const pt: Record<string, string> = {
   'situation.family.title': 'Reagrupamento familiar',
   'situation.family.desc': 'Estou me juntando a um membro da minha fam\u00edlia na Fran\u00e7a',
   'situation.refugee.title': 'Solicitante de asilo / Refugiado(a)',
-  'situation.refugee.desc': 'Pedido de prote\u00e7\u00e3o internacional (OFPRA)',
+  'situation.refugee.desc': 'Pedido de proteção internacional (OFPRA)',
+
+  // Onboarding compartilhado
+  'onboarding.next': 'Continuar',
+
+  // CityScreen
+  'city.title': 'A sua cidade',
+  'city.subtitle': 'Vamos mostrar os recursos locais e contatos úteis da sua cidade.',
+  'city.resources': '{count} recursos locais disponíveis',
+  'city.otherTitle': 'Minha cidade não está na lista',
+  'city.otherDesc': 'Sem problema — você terá acesso a todos os guias mesmo assim.',
+  'city.cta': 'Começar com o Boussole',
 
   // HomeScreen
-  'home.greeting': 'Ol\u00e1 \ud83d\udc4b',
+  'home.greeting': 'Olá \ud83d\udc4b',
+  'home.welcome': 'Cada passo concluído te aproxima da sua nova vida na França.',
   'home.progress.title': 'Seu progresso',
-  'home.progress.count': '{completed}/{total} guias',
-  'home.progress.start': 'Comece pelos guias priorit\u00e1rios abaixo!',
-  'home.progress.continue': 'Continue \u2014 {remaining} procedimentos restantes.',
-  'home.section.priority': '\ud83c\udfaf Priorit\u00e1rio para voc\u00ea',
+  'home.progress.count': '{completed}/{total}',
+  'home.progress.start': 'Comece pelos guias prioritários abaixo!',
+  'home.progress.continue': 'Continue — {remaining} procedimentos restantes.',
+  'home.progress.done': 'Parabéns, todos os procedimentos foram concluídos!',
+  'home.section.priority': 'Prioritário para você',
   'home.section.seeAll': 'Ver tudo',
-  'home.section.quickActions': '\u26a1 A\u00e7\u00f5es r\u00e1pidas',
-  'home.ai.title': 'Tem uma d\u00favida sobre a burocracia?',
-  'home.ai.desc': 'Nossa IA responde em franc\u00eas, ingl\u00eas ou portugu\u00eas',
+  'home.section.quickActions': 'Explorar por tema',
+  'home.ai.title': 'Precisa de ajuda?',
+  'home.ai.desc': 'Faça suas perguntas ao nosso assistente IA',
+  'home.ai.cta': 'Iniciar uma conversa',
   'home.steps': '{count} etapas',
 
   // Shared labels
@@ -105,6 +120,9 @@ const pt: Record<string, string> = {
   'guideDetail.error': 'Erro',
   'guideDetail.errorLink': 'N\u00e3o foi poss\u00edvel abrir o link.',
   'guideDetail.steps': '{count} etapas',
+  'guideDetail.localTitle': 'Recursos locais — {city}',
+  'guideDetail.localSub': 'Onde realizar este processo perto de você',
+  'guideDetail.localWebsite': '🌐 Visitar o site',
 
   // ChatScreen
   'chat.headerTitle': 'Assistente Boussole',

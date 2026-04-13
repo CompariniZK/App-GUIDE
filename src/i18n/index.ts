@@ -11,6 +11,7 @@ const locales: Record<AppLanguage, Record<string, string>> = { fr, en, pt, es, a
 
 // ─── Nationality → Language mapping ─────────────────────────────────────────
 export const NATIONALITY_TO_LANGUAGE: Record<string, AppLanguage> = {
+  FR: 'fr',
   BR: 'pt', PT: 'pt',
   MA: 'fr', DZ: 'fr', TN: 'fr',
   ES: 'es', MX: 'es', CO: 'es',

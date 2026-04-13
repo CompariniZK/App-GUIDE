@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  SafeAreaView, StatusBar, Linking, Alert,
+  StatusBar, Linking, Alert, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
+import { getCityById, GUIDE_RESOURCE_MAP, RESOURCE_ICONS } from '../../constants/cities';
 import { GuideCategory, GuidesStackParamList } from '../../types';
 import { useProfile } from '../../context/ProfileContext';
 import { useTranslation } from '../../i18n';
@@ -42,6 +44,13 @@ export default function GuideDetailScreen() {
   const isSaved     = profile?.savedGuides.includes(guide.id) ?? false;
   const catColor    = CATEGORY_COLORS[guide.category];
 
+  // Recursos locais relevantes para este guia
+  const city = profile?.cityId ? getCityById(profile.cityId) : undefined;
+  const relevantTypes = GUIDE_RESOURCE_MAP[guide.id] ?? [];
+  const localResources = city
+    ? city.resources.filter(r => relevantTypes.includes(r.type))
+    : [];
+
   const openLink = (url: string) => {
     Linking.openURL(url).catch(() =>
       Alert.alert(t('guideDetail.error'), t('guideDetail.errorLink'))
@@ -49,8 +58,9 @@ export default function GuideDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={catColor} />
+    <SafeAreaView style={[styles.container, { backgroundColor: catColor }]} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={catColor}
+        translucent={Platform.OS === 'android'} />
 
       <View style={[styles.hero, { backgroundColor: catColor }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -157,6 +167,39 @@ export default function GuideDetailScreen() {
           );
         })}
 
+        {localResources.length > 0 && (
+          <View style={styles.localBox}>
+            <View style={styles.localHeader}>
+              <Text style={styles.localTitle}>
+                📍 {t('guideDetail.localTitle', { city: city!.name })}
+              </Text>
+              <Text style={styles.localSub}>{t('guideDetail.localSub')}</Text>
+            </View>
+            {localResources.map((r, i) => (
+              <View key={i} style={[styles.localRow, i > 0 && styles.localRowBorder]}>
+                <View style={styles.localIconWrap}>
+                  <Text style={styles.localIcon}>{RESOURCE_ICONS[r.type]}</Text>
+                </View>
+                <View style={styles.localInfo}>
+                  <Text style={styles.localName}>{r.name}</Text>
+                  {r.phone && (
+                    <TouchableOpacity onPress={() => openLink(`tel:${r.phone}`)}>
+                      <Text style={styles.localPhone}>📞 {r.phone}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {r.address && <Text style={styles.localDetail}>📌 {r.address}</Text>}
+                  {r.hours && <Text style={styles.localHours}>🕐 {r.hours}</Text>}
+                  {r.website && (
+                    <TouchableOpacity onPress={() => openLink(r.website!)}>
+                      <Text style={styles.localLink}>{t('guideDetail.localWebsite')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.completeBtn, isCompleted && styles.completeBtnDone]}
           onPress={() => markGuideCompleted(guide.id)}
@@ -180,9 +223,9 @@ export default function GuideDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  hero: { paddingTop: 56, paddingHorizontal: 24, paddingBottom: 24 },
-  backBtn: { position: 'absolute', top: 12, left: 20, padding: 4 },
-  saveBtn: { position: 'absolute', top: 12, right: 20, padding: 4 },
+  hero: { paddingTop: 48, paddingHorizontal: 24, paddingBottom: 24 },
+  backBtn: { position: 'absolute', top: 6, left: 20, padding: 8, zIndex: 10 },
+  saveBtn: { position: 'absolute', top: 6, right: 20, padding: 8, zIndex: 10 },
   heroEmoji: { fontSize: 40, marginBottom: 8 },
   heroTitle: { fontSize: 22, fontWeight: '800', color: Colors.white, marginBottom: 4 },
   heroSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 18, marginBottom: 14 },
@@ -219,7 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   stepNumberText: { fontSize: 13, fontWeight: '800', color: Colors.white },
-  stepTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  stepTitle: { flex: 1, flexShrink: 1, fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
   stepBody: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderColor: Colors.divider },
   stepDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginTop: 12, marginBottom: 10 },
   docsBox: {
@@ -231,9 +274,9 @@ const styles = StyleSheet.create({
   docText: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
   tipBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFF8ED', borderRadius: 10, padding: 12, marginBottom: 10,
+    backgroundColor: Colors.tipBg, borderRadius: 10, padding: 12, marginBottom: 10,
   },
-  tipText: { flex: 1, fontSize: 12, color: '#92600A', lineHeight: 17 },
+  tipText: { flex: 1, fontSize: 12, color: Colors.tipText, lineHeight: 17 },
   officialBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8,
@@ -247,4 +290,32 @@ const styles = StyleSheet.create({
   },
   completeBtnDone: { backgroundColor: Colors.success, borderColor: Colors.success },
   completeBtnText: { fontSize: 15, fontWeight: '700', color: Colors.success },
+  // ─── Local Resources ───────────────────────────────────────────────────────
+  localBox: {
+    backgroundColor: Colors.white,
+    borderRadius: 16, marginTop: 24,
+    borderWidth: 1, borderColor: Colors.border,
+    borderLeftWidth: 4, borderLeftColor: Colors.primaryLight,
+    overflow: 'hidden',
+  },
+  localHeader: {
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10,
+    borderBottomWidth: 1, borderBottomColor: Colors.divider,
+  },
+  localTitle: { fontSize: 14, fontWeight: '800', color: Colors.primary },
+  localSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  localRow: { flexDirection: 'row', padding: 14, gap: 12, alignItems: 'flex-start' },
+  localRowBorder: { borderTopWidth: 1, borderTopColor: Colors.divider },
+  localIconWrap: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: 'rgba(26,35,126,0.07)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  localIcon: { fontSize: 20 },
+  localInfo: { flex: 1, gap: 3 },
+  localName: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
+  localPhone: { fontSize: 12, color: Colors.primaryLight, fontWeight: '600' },
+  localDetail: { fontSize: 12, color: Colors.textSecondary },
+  localHours: { fontSize: 11, color: Colors.textMuted },
+  localLink: { fontSize: 12, color: Colors.primaryLight, fontWeight: '600', marginTop: 2 },
 });

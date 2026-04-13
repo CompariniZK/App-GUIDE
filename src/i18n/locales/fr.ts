@@ -16,7 +16,8 @@ const fr: Record<string, string> = {
   'nationality.subtitle': 'Cela nous aide \u00e0 personnaliser les informations selon votre situation.',
   'nationality.search': 'Chercher un pays...',
   'nationality.continue': 'Continuer',
-  'country.BR': 'Br\u00e9sil',
+  'country.FR': 'France',
+  'country.BR': 'Brésil',
   'country.MA': 'Maroc',
   'country.DZ': 'Alg\u00e9rie',
   'country.TN': 'Tunisie',
@@ -54,18 +55,32 @@ const fr: Record<string, string> = {
   'situation.refugee.title': 'Demandeur d\'asile / R\u00e9fugi\u00e9(e)',
   'situation.refugee.desc': 'Demande de protection internationale (OFPRA)',
 
+  // Onboarding shared
+  'onboarding.next': 'Continuer',
+
+  // CityScreen
+  'city.title': 'Votre ville',
+  'city.subtitle': 'Nous afficherons les ressources locales et contacts utiles de votre ville.',
+  'city.resources': '{count} ressources locales disponibles',
+  'city.otherTitle': 'Ma ville n\'est pas listée',
+  'city.otherDesc': 'Pas de problème — vous accéderez quand même à tous les guides.',
+  'city.cta': 'Démarrer avec Boussole',
+
   // HomeScreen
   'home.greeting': 'Bonjour \ud83d\udc4b',
+  'home.welcome': 'Chaque démarche accomplie vous rapproche de votre nouvelle vie en France.',
   'home.progress.title': 'Votre progression',
-  'home.progress.count': '{completed}/{total} guides',
+  'home.progress.count': '{completed}/{total}',
   'home.progress.start': 'Commencez par les guides prioritaires ci-dessous !',
-  'home.progress.continue': 'Continuez \u2014 {remaining} d\u00e9marches restantes.',
-  'home.section.priority': '\ud83c\udfaf Prioritaire pour vous',
+  'home.progress.continue': 'Continuez — {remaining} démarches restantes.',
+  'home.progress.done': 'Bravo, toutes les démarches sont terminées !',
+  'home.section.priority': 'Prioritaire pour vous',
   'home.section.seeAll': 'Voir tout',
-  'home.section.quickActions': '\u26a1 Actions rapides',
-  'home.ai.title': 'Une question sur la bureaucratie ?',
-  'home.ai.desc': 'Notre IA r\u00e9pond en fran\u00e7ais, anglais ou portugais',
-  'home.steps': '{count} \u00e9tapes',
+  'home.section.quickActions': 'Explorer par thème',
+  'home.ai.title': 'Besoin d\'aide ?',
+  'home.ai.desc': 'Posez vos questions à notre assistant IA',
+  'home.ai.cta': 'Démarrer une conversation',
+  'home.steps': '{count} étapes',
 
   // Shared labels
   'difficulty.easy': 'Facile',
@@ -104,7 +119,10 @@ const fr: Record<string, string> = {
   'guideDetail.completed': 'D\u00e9marche termin\u00e9e \u2713',
   'guideDetail.error': 'Erreur',
   'guideDetail.errorLink': 'Impossible d\'ouvrir le lien.',
-  'guideDetail.steps': '{count} \u00e9tapes',
+  'guideDetail.steps': '{count} étapes',
+  'guideDetail.localTitle': 'Ressources locales — {city}',
+  'guideDetail.localSub': 'Où effectuer cette démarche près de chez vous',
+  'guideDetail.localWebsite': '🌐 Visiter le site',
 
   // ChatScreen
   'chat.headerTitle': 'Assistant Boussole',

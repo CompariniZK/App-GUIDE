@@ -16,6 +16,7 @@ const en: Record<string, string> = {
   'nationality.subtitle': 'This helps us personalize information based on your situation.',
   'nationality.search': 'Search for a country...',
   'nationality.continue': 'Continue',
+  'country.FR': 'France',
   'country.BR': 'Brazil',
   'country.MA': 'Morocco',
   'country.DZ': 'Algeria',
@@ -54,17 +55,31 @@ const en: Record<string, string> = {
   'situation.refugee.title': 'Asylum seeker / Refugee',
   'situation.refugee.desc': 'International protection request (OFPRA)',
 
+  // Onboarding shared
+  'onboarding.next': 'Continue',
+
+  // CityScreen
+  'city.title': 'Your city',
+  'city.subtitle': 'We will show you local resources and useful contacts in your city.',
+  'city.resources': '{count} local resources available',
+  'city.otherTitle': 'My city is not listed',
+  'city.otherDesc': 'No problem — you will still have access to all guides.',
+  'city.cta': 'Start with Boussole',
+
   // Home
   'home.greeting': 'Hello \ud83d\udc4b',
+  'home.welcome': 'Every step completed brings you closer to your new life in France.',
   'home.progress.title': 'Your progress',
-  'home.progress.count': '{completed}/{total} guides',
+  'home.progress.count': '{completed}/{total}',
   'home.progress.start': 'Start with the priority guides below!',
-  'home.progress.continue': 'Keep going \u2014 {remaining} procedures remaining.',
-  'home.section.priority': '\ud83c\udfaf Priority for you',
+  'home.progress.continue': 'Keep going — {remaining} procedures remaining.',
+  'home.progress.done': 'Well done, all procedures are completed!',
+  'home.section.priority': 'Priority for you',
   'home.section.seeAll': 'See all',
-  'home.section.quickActions': '\u26a1 Quick actions',
-  'home.ai.title': 'Question about bureaucracy?',
-  'home.ai.desc': 'Our AI answers in French, English or Portuguese',
+  'home.section.quickActions': 'Explore by topic',
+  'home.ai.title': 'Need help?',
+  'home.ai.desc': 'Ask our AI assistant your questions',
+  'home.ai.cta': 'Start a conversation',
   'home.steps': '{count} steps',
 
   // Shared
@@ -105,6 +120,9 @@ const en: Record<string, string> = {
   'guideDetail.error': 'Error',
   'guideDetail.errorLink': 'Unable to open the link.',
   'guideDetail.steps': '{count} steps',
+  'guideDetail.localTitle': 'Local resources — {city}',
+  'guideDetail.localSub': 'Where to complete this procedure near you',
+  'guideDetail.localWebsite': '🌐 Visit website',
 
   // Chat
   'chat.headerTitle': 'Boussole Assistant',

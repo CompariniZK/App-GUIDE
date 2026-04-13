@@ -16,6 +16,7 @@ const es: Record<string, string> = {
   'nationality.subtitle': 'Esto nos ayuda a personalizar la información según tu situación.',
   'nationality.search': 'Buscar un país...',
   'nationality.continue': 'Continuar',
+  'country.FR': 'Francia',
   'country.BR': 'Brasil',
   'country.MA': 'Marruecos',
   'country.DZ': 'Argelia',
@@ -54,17 +55,31 @@ const es: Record<string, string> = {
   'situation.refugee.title': 'Solicitante de asilo / Refugiado',
   'situation.refugee.desc': 'Solicitud de protección internacional (OFPRA)',
 
+  // Onboarding compartido
+  'onboarding.next': 'Continuar',
+
+  // CityScreen
+  'city.title': 'Tu ciudad',
+  'city.subtitle': 'Te mostraremos los recursos locales y contactos útiles de tu ciudad.',
+  'city.resources': '{count} recursos locales disponibles',
+  'city.otherTitle': 'Mi ciudad no está en la lista',
+  'city.otherDesc': 'Sin problema — igual tendrás acceso a todas las guías.',
+  'city.cta': 'Comenzar con Boussole',
+
   // Home
   'home.greeting': 'Hola \ud83d\udc4b',
+  'home.welcome': 'Cada paso completado te acerca a tu nueva vida en Francia.',
   'home.progress.title': 'Tu progreso',
-  'home.progress.count': '{completed}/{total} guías',
+  'home.progress.count': '{completed}/{total}',
   'home.progress.start': '¡Empieza con las guías prioritarias de abajo!',
   'home.progress.continue': 'Sigue así — quedan {remaining} trámites.',
-  'home.section.priority': '\ud83c\udfaf Prioridad para ti',
+  'home.progress.done': '¡Felicidades, todos los trámites están completados!',
+  'home.section.priority': 'Prioridad para ti',
   'home.section.seeAll': 'Ver todo',
-  'home.section.quickActions': '\u26a1 Acciones rápidas',
-  'home.ai.title': '¿Pregunta sobre burocracia?',
-  'home.ai.desc': 'Nuestra IA responde en francés, inglés o portugués',
+  'home.section.quickActions': 'Explorar por tema',
+  'home.ai.title': '¿Necesitas ayuda?',
+  'home.ai.desc': 'Haz tus preguntas a nuestro asistente IA',
+  'home.ai.cta': 'Iniciar una conversación',
   'home.steps': '{count} pasos',
 
   // Shared
@@ -105,6 +120,9 @@ const es: Record<string, string> = {
   'guideDetail.error': 'Error',
   'guideDetail.errorLink': 'No se pudo abrir el enlace.',
   'guideDetail.steps': '{count} pasos',
+  'guideDetail.localTitle': 'Recursos locales — {city}',
+  'guideDetail.localSub': 'Dónde realizar este trámite cerca de ti',
+  'guideDetail.localWebsite': '🌐 Visitar sitio web',
 
   // Chat
   'chat.headerTitle': 'Asistente Boussole',

@@ -5,6 +5,7 @@ import { OnboardingStackParamList } from '../types';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import NationalityScreen from '../screens/onboarding/NationalityScreen';
 import SituationScreen from '../screens/onboarding/SituationScreen';
+import CityScreen from '../screens/onboarding/CityScreen';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -14,6 +15,7 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="Welcome"     component={WelcomeScreen} />
       <Stack.Screen name="Nationality" component={NationalityScreen} />
       <Stack.Screen name="Situation"   component={SituationScreen} />
+      <Stack.Screen name="City"        component={CityScreen} />
     </Stack.Navigator>
   );
 }

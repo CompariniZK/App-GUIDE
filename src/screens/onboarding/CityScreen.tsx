@@ -6,89 +6,121 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { OnboardingStackParamList, UserSituation } from '../../types';
+import { OnboardingStackParamList, UserProfile } from '../../types';
 import { Colors } from '../../constants/colors';
-import { useTranslation } from '../../i18n';
+import { useProfile } from '../../context/ProfileContext';
+import { CITIES } from '../../constants/cities';
+import { getLanguageForNationality, useTranslation } from '../../i18n';
 
 type Props = {
-  navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Situation'>;
-  route: RouteProp<OnboardingStackParamList, 'Situation'>;
+  navigation: NativeStackNavigationProp<OnboardingStackParamList, 'City'>;
+  route: RouteProp<OnboardingStackParamList, 'City'>;
 };
 
-const SITUATION_IDS: { id: UserSituation; emoji: string }[] = [
-  { id: 'new_arrival', emoji: '✈️' },
-  { id: 'resident', emoji: '🏡' },
-  { id: 'student', emoji: '🎓' },
-  { id: 'worker', emoji: '💼' },
-  { id: 'family', emoji: '👨‍👩‍👧' },
-  { id: 'refugee', emoji: '🕊️' },
-];
-
-export default function SituationScreen({ navigation, route }: Props) {
-  const [selected, setSelected] = useState<UserSituation | null>(null);
+export default function CityScreen({ navigation, route }: Props) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const { setProfile } = useProfile();
   const { t } = useTranslation();
-  const { nationality } = route.params;
+  const { nationality, situation } = route.params;
 
-  const handleNext = () => {
-    if (!selected) return;
-    navigation.navigate('City', { nationality, situation: selected });
+  const handleFinish = async (cityId?: string) => {
+    const profile: UserProfile = {
+      id: Date.now().toString(),
+      nationality,
+      situation,
+      language: getLanguageForNationality(nationality),
+      cityId: cityId ?? undefined,
+      completedGuides: [],
+      savedGuides: [],
+      createdAt: new Date().toISOString(),
+    };
+    await setProfile(profile);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
+      {/* Header com dots */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.progress}>
           <View style={[styles.dot, styles.dotComplete]} />
+          <View style={[styles.dot, styles.dotComplete]} />
           <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
           <View style={styles.dot} />
         </View>
       </View>
 
+      {/* Título */}
       <View style={styles.titleArea}>
-        <Text style={styles.title}>{t('situation.title')}</Text>
-        <Text style={styles.subtitle}>{t('situation.subtitle')}</Text>
+        <Text style={styles.title}>{t('city.title')}</Text>
+        <Text style={styles.subtitle}>{t('city.subtitle')}</Text>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {SITUATION_IDS.map(s => (
+        {/* Cards das cidades disponíveis */}
+        {CITIES.map(city => (
           <TouchableOpacity
-            key={s.id}
-            style={[styles.card, selected === s.id && styles.cardSelected]}
-            onPress={() => setSelected(s.id)}
+            key={city.id}
+            style={[styles.card, selected === city.id && styles.cardSelected]}
+            onPress={() => setSelected(city.id)}
             activeOpacity={0.75}
           >
-            <Text style={styles.emoji}>{s.emoji}</Text>
-            <View style={styles.cardText}>
-              <Text style={[styles.cardTitle, selected === s.id && styles.cardTitleSelected]}>
-                {t(`situation.${s.id}.title`)}
-              </Text>
-              <Text style={styles.cardDesc}>{t(`situation.${s.id}.desc`)}</Text>
+            <View style={styles.cityIconWrap}>
+              <Text style={styles.cityEmoji}>🏙️</Text>
             </View>
-            <View style={[styles.radio, selected === s.id && styles.radioSelected]}>
-              {selected === s.id && <View style={styles.radioInner} />}
+            <View style={styles.cardText}>
+              <Text style={[styles.cardTitle, selected === city.id && styles.cardTitleSelected]}>
+                {city.name}
+              </Text>
+              <Text style={styles.cardDesc}>{city.department}</Text>
+              <Text style={styles.cardResources}>
+                {t('city.resources', { count: city.resources.length })}
+              </Text>
+            </View>
+            <View style={[styles.radio, selected === city.id && styles.radioSelected]}>
+              {selected === city.id && <View style={styles.radioInner} />}
             </View>
           </TouchableOpacity>
         ))}
+
+        {/* Opção "minha cidade não está na lista" */}
+        <TouchableOpacity
+          style={[styles.card, styles.cardOther, selected === '__other' && styles.cardSelected]}
+          onPress={() => setSelected('__other')}
+          activeOpacity={0.75}
+        >
+          <View style={styles.cityIconWrap}>
+            <Text style={styles.cityEmoji}>📍</Text>
+          </View>
+          <View style={styles.cardText}>
+            <Text style={[styles.cardTitle, selected === '__other' && styles.cardTitleSelected]}>
+              {t('city.otherTitle')}
+            </Text>
+            <Text style={styles.cardDesc}>{t('city.otherDesc')}</Text>
+          </View>
+          <View style={[styles.radio, selected === '__other' && styles.radioSelected]}>
+            {selected === '__other' && <View style={styles.radioInner} />}
+          </View>
+        </TouchableOpacity>
       </ScrollView>
 
+      {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.btnNext, !selected && styles.btnNextDisabled]}
-          onPress={handleNext}
+          onPress={() => handleFinish(selected === '__other' ? undefined : selected ?? undefined)}
           disabled={!selected}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnNextText}>{t('onboarding.next')}</Text>
-          <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
+          <Text style={styles.btnNextText}>{t('city.cta')}</Text>
+          <Ionicons name="compass" size={18} color={Colors.primary} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -124,11 +156,18 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   cardSelected: { borderColor: Colors.primaryLight, backgroundColor: Colors.selectedBg },
-  emoji: { fontSize: 28 },
+  cardOther: { borderStyle: 'dashed' },
+  cityIconWrap: {
+    width: 48, height: 48, borderRadius: 14,
+    backgroundColor: 'rgba(26,35,126,0.07)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cityEmoji: { fontSize: 24 },
   cardText: { flex: 1 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
   cardTitleSelected: { color: Colors.primaryLight },
   cardDesc: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
+  cardResources: { fontSize: 11, color: Colors.primaryLight, fontWeight: '600', marginTop: 4 },
   radio: {
     width: 22, height: 22, borderRadius: 11,
     borderWidth: 2, borderColor: Colors.border,

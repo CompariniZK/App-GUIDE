@@ -12,6 +12,7 @@ import { useTranslation } from '../../i18n';
 type Props = { navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Nationality'> };
 
 const COUNTRIES = [
+  { code: 'FR', flag: '🇫🇷' },
   { code: 'BR', flag: '🇧🇷' },
   { code: 'MA', flag: '🇲🇦' },
   { code: 'DZ', flag: '🇩🇿' },
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
   },
   countryRowSelected: {
     borderColor: Colors.primaryLight,
-    backgroundColor: '#EEF4FF',
+    backgroundColor: Colors.selectedBg,
   },
   flag: { fontSize: 24 },
   countryName: { flex: 1, fontSize: 15, color: Colors.textPrimary, fontWeight: '500' },

@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 48,
     paddingVertical: 12,
   },
-  langOptionActive: { backgroundColor: '#EEF4FF' },
+  langOptionActive: { backgroundColor: Colors.selectedBg },
   langOptionText: { fontSize: 14, color: Colors.textPrimary },
   langOptionTextActive: { color: Colors.primaryLight, fontWeight: '700' },
   cityActiveRow: {
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.success + '12',
+    backgroundColor: Colors.successBg,
     borderTopWidth: 1,
     borderTopColor: Colors.divider,
   },
@@ -329,6 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.success,
     flex: 1,
+    flexShrink: 1,
     fontWeight: '600',
   },
   resetBtn: {
