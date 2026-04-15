@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 
@@ -7,18 +9,76 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_PROD = NODE_ENV === 'production';
+
+// ─── Fail-fast on missing secrets ──────────────────────────────────────────────
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('FATAL: ANTHROPIC_API_KEY is not set. Refusing to start.');
+  process.exit(1);
+}
 
 // Initialize Anthropic (Claude)
 const client = new Anthropic();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ─── Security headers ──────────────────────────────────────────────────────────
+// Helmet sets a sensible default of security headers
+// (X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security, etc.)
+app.use(helmet());
+
+// ─── CORS: strict allowlist ────────────────────────────────────────────────────
+// In production, ONLY the origins listed in ALLOWED_ORIGINS can call the API.
+// React Native / Expo apps do not send a browser Origin header, so requests
+// without an Origin are allowed (the rate limiter still covers them).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Native mobile apps → no Origin header → allow
+      if (!origin) return callback(null, true);
+      if (!IS_PROD) return callback(null, true); // Dev: allow everything
+      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      return callback(new Error('CORS: origin not allowed'));
+    },
+    methods: ['GET', 'POST'],
+    credentials: false,
+    maxAge: 600,
+  }),
+);
+
+// ─── Body size limit ───────────────────────────────────────────────────────────
+// 16KB is plenty for a chat request and shuts down payload-based DoS.
+app.use(express.json({ limit: '16kb' }));
+
+// ─── Global rate limit (per-IP) ────────────────────────────────────────────────
+// Hard cap the whole API. Tune in prod; dev gets a generous allowance.
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: IS_PROD ? 60 : 300, // req/min per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' },
+});
+app.use(globalLimiter);
+
+// Tighter limit specifically for the expensive /api/chat endpoint
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: IS_PROD ? 10 : 60, // req/min per IP on chat
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Chat rate limit reached. Please try again in a minute.' },
+});
+
+// ─── Input limits ──────────────────────────────────────────────────────────────
+const MAX_MESSAGE_LEN = 1000;
+const ALLOWED_LANGS = new Set(['fr', 'en', 'pt', 'es', 'ar']);
 
 // ─── Knowledge Base for RAG ────────────────────────────────────────────────────
-// In production, this would come from a database with pgvector embeddings
-// For MVP, we'll use a simple in-memory retrieval based on keywords
-
 const KNOWLEDGE_BASE = [
   {
     id: 'titre-sejour',
@@ -167,13 +227,16 @@ Quand c'est pertinent, mentionne ces ressources locales avec leurs coordonnées 
 `,
 };
 
+// Whitelist of valid city IDs (prevents prompt-injection via cityId)
+const ALLOWED_CITY_IDS = new Set(Object.keys(CITY_CONTEXTS));
+
 // ─── Helper Functions ──────────────────────────────────────────────────────
 function retrieveRelevantDocuments(query) {
   /**
    * Simple keyword-based retrieval
    * In production: use vector embeddings (LangChain + pgvector)
    */
-  const keywords = query.toLowerCase().split(' ');
+  const keywords = query.toLowerCase().split(/\s+/).filter(Boolean);
   const scored = KNOWLEDGE_BASE.map(doc => {
     const docText = (doc.title + ' ' + doc.content).toLowerCase();
     const matches = keywords.filter(kw => docText.includes(kw)).length;
@@ -208,47 +271,79 @@ function buildSystemPrompt(retrievedDocs) {
   return context;
 }
 
+// ─── Redact secrets from log lines ─────────────────────────────────────────────
+function redactSecrets(s) {
+  if (typeof s !== 'string') return s;
+  return s
+    .replace(/sk-[A-Za-z0-9_-]{20,}/g, '[REDACTED_ANTHROPIC_KEY]')
+    .replace(/gsk_[A-Za-z0-9]{20,}/g, '[REDACTED_GROQ_KEY]')
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [REDACTED]');
+}
+
+function safeLog(label, err) {
+  const msg = err?.message || String(err);
+  console.error(`[${label}]`, redactSecrets(msg));
+}
+
 // ─── API Endpoints ────────────────────────────────────────────────────────
 
 /**
  * POST /api/chat
  * Chat avec l'IA Boussole
- *
- * Body:
- * {
- *   "message": "Comment renouveler mon titre de séjour ?",
- *   "language": "fr"  // optional: fr, en, pt, es, ar
- * }
  */
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
-    const { message, language = 'fr', cityId } = req.body;
+    const body = req.body || {};
+    const { message, language, cityId } = body;
 
-    if (!message || typeof message !== 'string') {
-      return res.status(400).json({ error: 'Message is required' });
+    // ─── Strict input validation ─────────────────────────────────────────────
+    if (typeof message !== 'string') {
+      return res.status(400).json({ error: 'message must be a string' });
+    }
+    const trimmed = message.trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+    if (trimmed.length > MAX_MESSAGE_LEN) {
+      return res.status(413).json({
+        error: `message too long (max ${MAX_MESSAGE_LEN} characters)`,
+      });
     }
 
+    const safeLang = typeof language === 'string' && ALLOWED_LANGS.has(language)
+      ? language
+      : 'fr';
+
+    // Only accept cityId if it's a known entry (prevents cityId-injection
+    // from dumping arbitrary strings into the system prompt).
+    const safeCityId = typeof cityId === 'string' && ALLOWED_CITY_IDS.has(cityId)
+      ? cityId
+      : null;
+
     // Step 1: Retrieve relevant documents
-    const relevantDocs = retrieveRelevantDocuments(message);
+    const relevantDocs = retrieveRelevantDocuments(trimmed);
 
     // Step 2: Build system prompt with context + city
-    const cityContext = cityId && CITY_CONTEXTS[cityId] ? CITY_CONTEXTS[cityId] : '';
+    const cityContext = safeCityId ? CITY_CONTEXTS[safeCityId] : '';
     const systemPrompt = buildSystemPrompt(relevantDocs) + cityContext;
 
     // Step 3: Call Claude API
     const response = await client.messages.create({
-      model: 'claude-3-5-haiku-20241022', // Using Haiku for cost efficiency (~$0.001 per query)
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 1024,
       system: systemPrompt,
       messages: [
         {
           role: 'user',
-          content: message,
+          content: trimmed,
         },
       ],
     });
 
-    const assistantMessage = response.content[0].text;
+    const assistantMessage = response.content[0]?.text;
+    if (typeof assistantMessage !== 'string' || !assistantMessage) {
+      throw new Error('Empty response from Claude');
+    }
 
     // Step 4: Extract sources cited by Claude
     const sources = relevantDocs.map(doc => ({
@@ -259,27 +354,28 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       reply: assistantMessage,
       sources: sources.length > 0 ? sources : null,
-      language: language,
+      language: safeLang,
     });
   } catch (error) {
-    console.error('Error calling Claude API:', error);
-    res.status(500).json({ error: error.message });
+    // Log full (redacted) error server-side; return generic message to client.
+    safeLog('chat', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
  * GET /api/health
- * Health check
+ * Health check — intentionally minimal, does not leak runtime info.
  */
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', mode: process.env.NODE_ENV });
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok' });
 });
 
 /**
  * GET /api/guides
- * Get all guides in the knowledge base
+ * Get all guides in the knowledge base (public metadata only)
  */
-app.get('/api/guides', (req, res) => {
+app.get('/api/guides', (_req, res) => {
   const guides = KNOWLEDGE_BASE.map(({ id, title, category }) => ({
     id,
     title,
@@ -288,9 +384,36 @@ app.get('/api/guides', (req, res) => {
   res.json({ guides });
 });
 
+// ─── 404 handler ───────────────────────────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// ─── Centralized error handler (last middleware) ──────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  safeLog('unhandled', err);
+  // CORS error → 403 instead of 500
+  if (err?.message?.startsWith('CORS')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 // ─── Start Server ────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 Boussole Backend running on http://localhost:${PORT}`);
+  console.log(`🚀 Boussole Backend running on http://localhost:${PORT}  [${NODE_ENV}]`);
   console.log(`📝 Chat endpoint: POST http://localhost:${PORT}/api/chat`);
   console.log(`💚 Health: GET http://localhost:${PORT}/api/health`);
+  if (IS_PROD && ALLOWED_ORIGINS.length === 0) {
+    console.warn('⚠️  ALLOWED_ORIGINS is empty in production — browser requests will be blocked.');
+  }
+});
+
+// ─── Defensive crash handlers ──────────────────────────────────────────────────
+process.on('unhandledRejection', (reason) => {
+  safeLog('unhandledRejection', reason);
+});
+process.on('uncaughtException', (err) => {
+  safeLog('uncaughtException', err);
 });

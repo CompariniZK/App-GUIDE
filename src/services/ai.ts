@@ -3,6 +3,19 @@ import { ChatMessage, UserProfile } from '../types';
 const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// ─── Security limits ──────────────────────────────────────────────────────────
+const MAX_USER_MESSAGE_LEN = 1000;       // Hard-enforced cap on a single user message
+const MAX_HISTORY_MESSAGES = 20;         // Cap on conversation history sent upstream
+const MAX_HISTORY_MESSAGE_LEN = 2000;    // Cap per historical message
+const ALLOWED_LANGS = ['fr', 'en', 'pt', 'es', 'ar'] as const;
+
+// Whitelists to avoid prompt-injection via profile fields.
+// These are the only values the UI ever produces; anything else is treated as untrusted.
+const ALLOWED_SITUATIONS = new Set([
+  'student', 'worker', 'asylum-seeker', 'refugee', 'family',
+  'resident', 'tourist', 'entrepreneur', 'retired', 'other',
+]);
+
 const LANG_NAMES: Record<string, string> = {
   fr: 'français',
   en: 'English',
@@ -10,6 +23,20 @@ const LANG_NAMES: Record<string, string> = {
   es: 'español',
   ar: 'العربية',
 };
+
+/**
+ * Strip characters that could be used to break out of the system prompt
+ * (newlines, backticks, curly braces, angle brackets) and trim length.
+ * Used on every value that flows from `profile` into the system prompt.
+ */
+function sanitizeForPrompt(value: unknown, maxLen = 64): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[`${}<>\r\n]/g, '')
+    .replace(/\[(SYSTEM|INST|ASSISTANT|USER)[^\]]*\]/gi, '')
+    .slice(0, maxLen)
+    .trim();
+}
 
 // ─── Base juridique française — immigration & droits des étrangers ────────────
 const FRENCH_LEGAL_BASE = `
@@ -175,8 +202,20 @@ NATURALISATION ET NATIONALITÉ :
 `;
 
 function buildSystemPrompt(profile?: UserProfile | null): string {
-  const lang = profile?.language || 'fr';
+  // ─── Whitelist + sanitize profile fields before interpolation ───────────────
+  const rawLang = profile?.language;
+  const lang = (ALLOWED_LANGS as readonly string[]).includes(rawLang as string)
+    ? (rawLang as string)
+    : 'fr';
   const langName = LANG_NAMES[lang] || 'français';
+
+  // Nationality is a 2-letter ISO code in the UI; force a hard shape.
+  const rawNat = sanitizeForPrompt(profile?.nationality, 3).toUpperCase();
+  const safeNationality = /^[A-Z]{2,3}$/.test(rawNat) ? rawNat : 'inconnue';
+
+  // Situation must be one of the known enum values.
+  const rawSit = sanitizeForPrompt(profile?.situation, 32);
+  const safeSituation = ALLOWED_SITUATIONS.has(rawSit) ? rawSit : 'inconnue';
 
   return `Tu es Boussole, un assistant IA intégré à l'application mobile "Boussole" — une application conçue pour aider les immigrants en France à naviguer dans les démarches administratives.
 
@@ -232,8 +271,8 @@ Si l'utilisateur demande comment faire une démarche qui correspond à un de ces
 ${FRENCH_LEGAL_BASE}
 
 ═══ CONTEXTE UTILISATEUR ═══
-Nationalité : ${profile?.nationality || 'inconnue'}
-Situation : ${profile?.situation || 'inconnue'}
+Nationalité : ${safeNationality}
+Situation : ${safeSituation}
 Langue préférée : ${langName}
 
 ═══ RÈGLES ═══
@@ -248,6 +287,19 @@ Langue préférée : ${langName}
 - Quand c'est pertinent, rappelle à l'utilisateur qu'un guide détaillé existe dans l'app`;
 }
 
+/**
+ * Redact anything that looks like an API key, bearer token, or long secret
+ * before logging. Defense in depth: even if Groq ever returns our key back,
+ * it never hits the device console or error stream.
+ */
+function redactSecrets(s: string): string {
+  return s
+    .replace(/gsk_[A-Za-z0-9]{20,}/g, '[REDACTED_GROQ_KEY]')
+    .replace(/sk-[A-Za-z0-9_-]{20,}/g, '[REDACTED_KEY]')
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [REDACTED]')
+    .replace(/Authorization["':\s]+[A-Za-z0-9._-]+/gi, 'Authorization: [REDACTED]');
+}
+
 export async function callBoussoleAI(
   userMessage: string,
   history: ChatMessage[],
@@ -257,49 +309,86 @@ export async function callBoussoleAI(
     throw new Error('API_NOT_CONFIGURED');
   }
 
+  // ─── Input validation ──────────────────────────────────────────────────────
+  if (typeof userMessage !== 'string') {
+    throw new Error('INVALID_INPUT');
+  }
+  const trimmed = userMessage.trim();
+  if (!trimmed) {
+    throw new Error('EMPTY_INPUT');
+  }
+  // Hard-cap the message length server-side of the boundary (UI already caps
+  // at 500, but anyone who tampers with the bundle can bypass that).
+  const safeUserMessage = trimmed.slice(0, MAX_USER_MESSAGE_LEN);
+
   // Build conversation in OpenAI-compatible format (Groq uses the same format)
   const messages: { role: string; content: string }[] = [
     { role: 'system', content: buildSystemPrompt(profile) },
   ];
 
-  // Add conversation history
-  history
-    .filter(m => !m.isLoading && m.id !== '0')
+  // Add conversation history — bounded to prevent runaway payloads / cost
+  const safeHistory = Array.isArray(history) ? history : [];
+  safeHistory
+    .filter(m => m && !m.isLoading && m.id !== '0' && typeof m.content === 'string')
+    .slice(-MAX_HISTORY_MESSAGES)
     .forEach(m => {
       messages.push({
         role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content,
+        content: m.content.slice(0, MAX_HISTORY_MESSAGE_LEN),
       });
     });
 
-  // Add current user message
-  messages.push({ role: 'user', content: userMessage });
+  // Add current user message (sanitized)
+  messages.push({ role: 'user', content: safeUserMessage });
 
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages,
-      max_tokens: 2048,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Groq API error:', error);
-    throw new Error(`API error: ${response.status}`);
+  let response: Response;
+  try {
+    response = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages,
+        max_tokens: 2048,
+        temperature: 0.7,
+      }),
+    });
+  } catch (networkErr: any) {
+    // Do NOT log the full error — it may contain the request URL with auth
+    // context on some runtimes. Log only the name of the error.
+    if (__DEV__) {
+      console.warn('[ai] network error:', networkErr?.name || 'unknown');
+    }
+    throw new Error('NETWORK_ERROR');
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    // Read the body safely, redact any secrets, then throw a generic error.
+    let bodyText = '';
+    try {
+      bodyText = await response.text();
+    } catch {
+      bodyText = '';
+    }
+    if (__DEV__) {
+      console.warn('[ai] upstream error', response.status, redactSecrets(bodyText).slice(0, 200));
+    }
+    throw new Error(`API_ERROR_${response.status}`);
+  }
+
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('INVALID_RESPONSE');
+  }
 
   const text = data?.choices?.[0]?.message?.content;
-  if (!text) {
-    throw new Error('Empty response from AI');
+  if (typeof text !== 'string' || !text.trim()) {
+    throw new Error('EMPTY_RESPONSE');
   }
 
   return text;
