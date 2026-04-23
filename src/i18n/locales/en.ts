@@ -36,6 +36,9 @@ const en: Record<string, string> = {
   'country.PL': 'Poland',
   'country.MX': 'Mexico',
   'country.CO': 'Colombia',
+  'country.EG': 'Egypt',
+  'country.SY': 'Syria',
+  'country.LB': 'Lebanon',
   'country.OTHER': 'Other country',
 
   // Situation

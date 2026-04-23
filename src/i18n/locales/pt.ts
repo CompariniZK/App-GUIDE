@@ -36,6 +36,9 @@ const pt: Record<string, string> = {
   'country.PL': 'Pol\u00f4nia',
   'country.MX': 'M\u00e9xico',
   'country.CO': 'Col\u00f4mbia',
+  'country.EG': 'Egito',
+  'country.SY': 'S\u00edria',
+  'country.LB': 'L\u00edbano',
   'country.OTHER': 'Outro pa\u00eds',
 
   // SituationScreen

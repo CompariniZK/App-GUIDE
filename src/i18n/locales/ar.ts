@@ -35,6 +35,9 @@ const ar: Record<string, string> = {
   'country.PL': 'بولندا',
   'country.MX': 'المكسيك',
   'country.CO': 'كولومبيا',
+  'country.EG': 'مصر',
+  'country.SY': 'سوريا',
+  'country.LB': 'لبنان',
   'country.OTHER': 'دولة أخرى',
 
   // SituationScreen

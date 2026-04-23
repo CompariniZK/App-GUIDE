@@ -13,7 +13,7 @@ const locales: Record<AppLanguage, Record<string, string>> = { fr, en, pt, es, a
 export const NATIONALITY_TO_LANGUAGE: Record<string, AppLanguage> = {
   FR: 'fr',
   BR: 'pt', PT: 'pt',
-  MA: 'fr', DZ: 'fr', TN: 'fr',
+  MA: 'ar', DZ: 'ar', TN: 'ar', EG: 'ar', SY: 'ar', LB: 'ar',
   ES: 'es', MX: 'es', CO: 'es',
   NG: 'en', PH: 'en', IN: 'en',
   SN: 'fr', ML: 'fr', CM: 'fr', CI: 'fr',
