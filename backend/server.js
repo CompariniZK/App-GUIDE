@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_USER_MESSAGE_LEN as GROQ_MAX_MSG, MAX_HISTORY_MESSAGES as GROQ_MAX_HIST } from './groqService.js';
 
 dotenv.config();
 
@@ -16,6 +17,15 @@ const IS_PROD = NODE_ENV === 'production';
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('FATAL: ANTHROPIC_API_KEY is not set. Refusing to start.');
   process.exit(1);
+}
+if (!process.env.GROQ_API_KEY) {
+  // Warn-only in dev so the rest of the API still works; fail-fast in prod.
+  if (IS_PROD) {
+    console.error('FATAL: GROQ_API_KEY is not set in production. Refusing to start.');
+    process.exit(1);
+  } else {
+    console.warn('⚠️  GROQ_API_KEY not set — /api/groq/chat will return 503.');
+  }
 }
 
 // Initialize Anthropic (Claude)
@@ -364,6 +374,102 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 });
 
 /**
+ * POST /api/groq/chat
+ * Chat avec l'IA Boussole (Groq backend).
+ *
+ * Body:
+ *   {
+ *     message:  string  (required, <= 1000 chars),
+ *     history:  Array<{ role: 'user'|'assistant', content: string }>  (optional),
+ *     profile?: {
+ *       nationality?: string,   // 2-3 letter ISO code
+ *       situation?:   string,   // one of ALLOWED_SITUATIONS
+ *       language?:    'fr'|'en'|'pt'|'es'|'ar'
+ *     }
+ *   }
+ * Returns:
+ *   { reply: string }   on success
+ *   { error: string }   on failure (no upstream details leaked)
+ */
+app.post('/api/groq/chat', chatLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const { message, history, profile } = body;
+
+    // ─── Input validation ──────────────────────────────────────────────────
+    if (typeof message !== 'string') {
+      return res.status(400).json({ error: 'message must be a string' });
+    }
+    const trimmed = message.trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: 'message is required' });
+    }
+    if (trimmed.length > GROQ_MAX_MSG) {
+      return res.status(413).json({ error: `message too long (max ${GROQ_MAX_MSG})` });
+    }
+
+    // History: must be array of plain {role, content}; we cap + sanitize in service
+    let safeHistory = [];
+    if (Array.isArray(history)) {
+      if (history.length > GROQ_MAX_HIST) {
+        return res.status(413).json({ error: `history too long (max ${GROQ_MAX_HIST})` });
+      }
+      safeHistory = history
+        .filter(m => m && typeof m === 'object' && typeof m.content === 'string')
+        .map(m => ({
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content,
+        }));
+    }
+
+    // Profile: shape coerce — anything we don't recognize is dropped
+    const safeProfile = {};
+    if (profile && typeof profile === 'object') {
+      if (typeof profile.nationality === 'string') safeProfile.nationality = profile.nationality;
+      if (typeof profile.situation === 'string') safeProfile.situation = profile.situation;
+      if (typeof profile.language === 'string' && GROQ_ALLOWED_LANGS.has(profile.language)) {
+        safeProfile.language = profile.language;
+      }
+    }
+
+    // ─── Call Groq ────────────────────────────────────────────────────────
+    const reply = await callGroq({
+      userMessage: trimmed,
+      history: safeHistory,
+      profile: safeProfile,
+    });
+
+    res.json({ reply });
+  } catch (error) {
+    // Log full (redacted) error server-side
+    const code = error?.code || 'UNKNOWN';
+    if (code.startsWith('UPSTREAM_')) {
+      safeLog('groq.upstream', `${code} ${redactSecrets(error.upstreamBody || '')}`);
+    } else {
+      safeLog('groq', error);
+    }
+
+    // Client-side: opaque error codes, no upstream details
+    if (code === 'GROQ_NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'AI service not configured' });
+    }
+    if (code === 'NETWORK_ERROR') {
+      return res.status(502).json({ error: 'Upstream network error' });
+    }
+    if (code === 'UPSTREAM_429') {
+      return res.status(429).json({ error: 'Rate limited by upstream, please retry' });
+    }
+    if (code.startsWith('UPSTREAM_4')) {
+      return res.status(502).json({ error: 'Upstream error' });
+    }
+    if (code.startsWith('UPSTREAM_5')) {
+      return res.status(502).json({ error: 'Upstream unavailable' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/health
  * Health check — intentionally minimal, does not leak runtime info.
  */
@@ -401,10 +507,13 @@ app.use((err, _req, res, _next) => {
 });
 
 // ─── Start Server ────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 explicitly so the server is reachable from outside the
+// container in cloud environments (Railway, Render, Fly.io).
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Boussole Backend running on http://localhost:${PORT}  [${NODE_ENV}]`);
-  console.log(`📝 Chat endpoint: POST http://localhost:${PORT}/api/chat`);
-  console.log(`💚 Health: GET http://localhost:${PORT}/api/health`);
+  console.log(`📝 Chat (Claude/RAG): POST http://localhost:${PORT}/api/chat`);
+  console.log(`🤖 Chat (Groq):       POST http://localhost:${PORT}/api/groq/chat`);
+  console.log(`💚 Health:            GET  http://localhost:${PORT}/api/health`);
   if (IS_PROD && ALLOWED_ORIGINS.length === 0) {
     console.warn('⚠️  ALLOWED_ORIGINS is empty in production — browser requests will be blocked.');
   }

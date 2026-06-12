@@ -134,6 +134,8 @@ const pt: Record<string, string> = {
   'chat.suggestionsTitle': 'Perguntas frequentes:',
   'chat.placeholder': 'Fa\u00e7a sua pergunta...',
   'chat.error': 'Desculpe, ocorreu um erro. Tente novamente.',
+  'chat.rateLimited': '⚡ Muitas perguntas em pouco tempo. Aguarde alguns segundos antes de tentar novamente.',
+  'chat.networkError': '📡 Problema de conexão. Verifique seu Wi-Fi e tente novamente.',
   'chat.limitReached': '⚠️ Você atingiu o limite de 20 perguntas por dia. Volte amanhã para continuar usando o assistente IA.',
   'chat.limitReachedBar': 'Limite diário atingido — volte amanhã',
   'chat.suggestion.1': 'Como renovar meu título de residência?',
@@ -173,7 +175,7 @@ const pt: Record<string, string> = {
   'tab.profile': 'Perfil',
 
   // AI Service
-  'ai.notConfigured': 'O assistente IA ainda não está configurado.\n\nPara ativá-lo, adicione sua chave API Groq (gratuita) no arquivo .env:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nObtenha sua chave em console.groq.com\n\nEnquanto isso, consulte nossos Guias na aba dedicada!',
+  'ai.notConfigured': 'O assistente IA está temporariamente indisponível. Por favor, tente novamente em alguns instantes.\n\nEnquanto isso, consulte nossos Guias na aba dedicada!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renovar o t\u00edtulo de resid\u00eancia',
@@ -458,6 +460,66 @@ const pt: Record<string, string> = {
   'guide.france-travail-inscription.step4.title': 'Atualiza\u00e7\u00e3o mensal',
   'guide.france-travail-inscription.step4.desc': 'Todo m\u00eas, voc\u00ea deve se "atualizar" no francetravail.fr para continuar recebendo seus benef\u00edcios. Indique se trabalhou durante o m\u00eas.',
   'guide.france-travail-inscription.step4.tip': 'Ative lembretes \u2014 esquecer a atualiza\u00e7\u00e3o pode bloquear o pagamento dos seus benef\u00edcios.',
+
+  // \u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  'auth.welcome.createAccount': 'Criar uma conta',
+  'auth.welcome.haveAccount': 'J\u00e1 tenho uma conta',
+  'auth.welcome.disclaimer': 'Gratuito \u00b7 Seus dados ficam na Europa \ud83c\uddea\ud83c\uddfa',
+
+  'auth.field.email': 'Endere\u00e7o de e-mail',
+  'auth.field.password': 'Senha',
+  'auth.or': 'OU',
+
+  'auth.login.title': 'Bem-vindo de volta',
+  'auth.login.subtitle': 'Entre para acessar seus guias e conversas.',
+  'auth.login.forgot': 'Esqueceu a senha?',
+  'auth.login.cta': 'Entrar',
+  'auth.login.signupCta': 'Criar uma conta',
+
+  'auth.signup.title': 'Crie sua conta',
+  'auth.signup.subtitle': 'Sincronize seus guias e conversas entre dispositivos.',
+  'auth.signup.passwordHint': 'M\u00ednimo 10 caracteres com letras e n\u00fameros. Senhas comprometidas s\u00e3o recusadas.',
+  'auth.signup.legal': 'Ao criar uma conta, voc\u00ea aceita nossos termos de uso e pol\u00edtica de privacidade.',
+  'auth.signup.cta': 'Criar minha conta',
+  'auth.signup.haveAccount': 'J\u00e1 registrado?',
+  'auth.signup.loginCta': 'Entrar',
+
+  'auth.forgot.title': 'Esqueci a senha',
+  'auth.forgot.subtitle': 'Digite seu e-mail e enviaremos um link para redefinir sua senha.',
+  'auth.forgot.cta': 'Enviar o link',
+  'auth.forgot.sentTitle': 'Verifique sua caixa de entrada',
+  'auth.forgot.sentDesc': 'Se existir uma conta com este e-mail, voc\u00ea receber\u00e1 um link para redefinir sua senha em alguns minutos.',
+  'auth.forgot.backToLogin': 'Voltar ao login',
+
+  'auth.verify.title': 'Verifique seu e-mail',
+  'auth.verify.subtitle': 'Enviamos um link de confirma\u00e7\u00e3o para:',
+  'auth.verify.instructions': 'Clique no link no e-mail e depois volte aqui para entrar.',
+  'auth.verify.openMail': 'Abrir o app de e-mail',
+  'auth.verify.noEmail': 'N\u00e3o recebeu o e-mail?',
+  'auth.verify.resend': 'Reenviar',
+  'auth.verify.resent': 'E-mail reenviado \u2014 verifique sua caixa de entrada',
+  'auth.verify.alreadyVerified': 'J\u00e1 verificado?',
+  'auth.verify.loginNow': 'Entrar',
+
+  'auth.strength.weak': 'Fraca',
+  'auth.strength.fair': 'M\u00e9dia',
+  'auth.strength.good': 'Boa',
+  'auth.strength.strong': 'Forte',
+
+  'auth.error.invalid_email': 'Endere\u00e7o de e-mail inv\u00e1lido.',
+  'auth.error.weak_password': 'Senha muito fraca. M\u00ednimo 10 caracteres com letras e n\u00fameros.',
+  'auth.error.invalid_credentials': 'E-mail ou senha incorretos.',
+  'auth.error.email_not_confirmed': 'Seu e-mail ainda n\u00e3o foi verificado. Verifique sua caixa de entrada.',
+  'auth.error.user_already_exists': 'J\u00e1 existe uma conta com este e-mail.',
+  'auth.error.rate_limited': 'Muitas tentativas. Tente novamente em alguns minutos.',
+  'auth.error.not_configured': 'Servi\u00e7o indispon\u00edvel. Tente novamente mais tarde.',
+  'auth.error.network': 'Problema de conex\u00e3o. Verifique sua rede.',
+  'auth.error.unknown': 'Ocorreu um erro. Tente novamente.',
+
+  'profile.signOut': 'Sair',
+  'profile.signOutTitle': 'Sair da conta?',
+  'profile.signOutMessage': 'Voc\u00ea precisar\u00e1 entrar novamente para acessar seus dados sincronizados.',
+  'profile.signOutConfirm': 'Sair',
 };
 
 export default pt;

@@ -116,6 +116,8 @@ const ar: Record<string, string> = {
   'chat.suggestionsTitle': 'أسئلة متكررة:',
   'chat.placeholder': 'اطرح سؤالك...',
   'chat.error': 'عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.',
+  'chat.rateLimited': '⚡ أسئلة كثيرة في وقت قصير. يرجى الانتظار بضع ثوانٍ قبل المحاولة مرة أخرى.',
+  'chat.networkError': '📡 مشكلة في الاتصال. تحقق من شبكة Wi-Fi وحاول مرة أخرى.',
   'chat.suggestion.1': 'كيف أجدد إقامتي؟',
   'chat.suggestion.2': 'وصلت للتو، من أين أبدأ؟',
   'chat.suggestion.3': 'كيف أحصل على بطاقة Vitale؟',
@@ -153,7 +155,7 @@ const ar: Record<string, string> = {
   'tab.profile': 'الملف الشخصي',
 
   // AI Service
-  'ai.notConfigured': 'لم يتم تكوين مساعد الذكاء الاصطناعي بعد.\n\nلتفعيله، أضف مفتاح API المجاني من Groq في ملف .env:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nاحصل على مفتاحك من console.groq.com\n\nفي انتظار ذلك، تصفح أدلتنا في التبويب المخصص!',
+  'ai.notConfigured': 'مساعد الذكاء الاصطناعي غير متاح مؤقتًا. يرجى المحاولة مرة أخرى بعد قليل.\n\nفي انتظار ذلك، تصفح أدلتنا في التبويب المخصص!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'تجديد بطاقة الإقامة',
@@ -310,6 +312,66 @@ const ar: Record<string, string> = {
   'guide.france-travail-inscription.step4.title': 'التحديث الشهري',
   'guide.france-travail-inscription.step4.desc': 'كل شهر، يجب عليك "التحديث" على francetravail.fr لمواصلة تلقي مخصصاتك. أشر إلى ما إذا كنت قد عملت خلال الشهر.',
   'guide.france-travail-inscription.step4.tip': 'فعّل التذكيرات — نسيان التحديث قد يوقف صرف مخصصاتك.',
+
+  // ─── Auth ──────────────────────────────────────────────────────────────
+  'auth.welcome.createAccount': 'إنشاء حساب',
+  'auth.welcome.haveAccount': 'لدي حساب بالفعل',
+  'auth.welcome.disclaimer': 'مجاني · تبقى بياناتك في أوروبا 🇪🇺',
+
+  'auth.field.email': 'البريد الإلكتروني',
+  'auth.field.password': 'كلمة المرور',
+  'auth.or': 'أو',
+
+  'auth.login.title': 'مرحبًا بعودتك',
+  'auth.login.subtitle': 'سجّل الدخول للوصول إلى أدلتك ومحادثاتك.',
+  'auth.login.forgot': 'هل نسيت كلمة المرور؟',
+  'auth.login.cta': 'تسجيل الدخول',
+  'auth.login.signupCta': 'إنشاء حساب',
+
+  'auth.signup.title': 'أنشئ حسابك',
+  'auth.signup.subtitle': 'زامن أدلتك ومحادثاتك بين أجهزتك.',
+  'auth.signup.passwordHint': '10 أحرف على الأقل تتضمن أحرفًا وأرقامًا. كلمات المرور المسربة مرفوضة.',
+  'auth.signup.legal': 'بإنشائك حسابًا، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
+  'auth.signup.cta': 'أنشئ حسابي',
+  'auth.signup.haveAccount': 'هل أنت مسجل بالفعل؟',
+  'auth.signup.loginCta': 'تسجيل الدخول',
+
+  'auth.forgot.title': 'نسيت كلمة المرور',
+  'auth.forgot.subtitle': 'أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.',
+  'auth.forgot.cta': 'أرسل الرابط',
+  'auth.forgot.sentTitle': 'تحقق من بريدك الإلكتروني',
+  'auth.forgot.sentDesc': 'إذا كان هناك حساب مرتبط بهذا البريد، فستتلقى رابطًا لإعادة تعيين كلمة المرور خلال دقائق.',
+  'auth.forgot.backToLogin': 'العودة إلى تسجيل الدخول',
+
+  'auth.verify.title': 'تحقق من بريدك الإلكتروني',
+  'auth.verify.subtitle': 'أرسلنا رابط تأكيد إلى:',
+  'auth.verify.instructions': 'انقر على الرابط في البريد ثم عُد إلى هنا لتسجيل الدخول.',
+  'auth.verify.openMail': 'فتح تطبيق البريد',
+  'auth.verify.noEmail': 'لم تستلم البريد؟',
+  'auth.verify.resend': 'إعادة الإرسال',
+  'auth.verify.resent': 'تم إعادة إرسال البريد — تحقق من صندوق الوارد',
+  'auth.verify.alreadyVerified': 'تم التحقق بالفعل؟',
+  'auth.verify.loginNow': 'تسجيل الدخول',
+
+  'auth.strength.weak': 'ضعيفة',
+  'auth.strength.fair': 'متوسطة',
+  'auth.strength.good': 'جيدة',
+  'auth.strength.strong': 'قوية',
+
+  'auth.error.invalid_email': 'عنوان بريد إلكتروني غير صالح.',
+  'auth.error.weak_password': 'كلمة المرور ضعيفة جدًا. الحد الأدنى 10 أحرف مع حروف وأرقام.',
+  'auth.error.invalid_credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+  'auth.error.email_not_confirmed': 'لم يتم التحقق من بريدك الإلكتروني بعد. تحقق من صندوق الوارد.',
+  'auth.error.user_already_exists': 'يوجد حساب بهذا البريد الإلكتروني بالفعل.',
+  'auth.error.rate_limited': 'محاولات كثيرة جدًا. الرجاء المحاولة بعد دقائق.',
+  'auth.error.not_configured': 'الخدمة غير متاحة. حاول مجددًا لاحقًا.',
+  'auth.error.network': 'مشكلة في الاتصال. تحقق من شبكتك.',
+  'auth.error.unknown': 'حدث خطأ ما. حاول مجددًا.',
+
+  'profile.signOut': 'تسجيل الخروج',
+  'profile.signOutTitle': 'تسجيل الخروج؟',
+  'profile.signOutMessage': 'ستحتاج إلى تسجيل الدخول مرة أخرى للوصول إلى بياناتك المتزامنة.',
+  'profile.signOutConfirm': 'تسجيل الخروج',
 };
 
 export default ar;

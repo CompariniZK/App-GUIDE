@@ -134,6 +134,8 @@ const en: Record<string, string> = {
   'chat.suggestionsTitle': 'Frequently asked questions:',
   'chat.placeholder': 'Ask your question...',
   'chat.error': 'Sorry, an error occurred. Please try again.',
+  'chat.rateLimited': '⚡ Too many questions in a short time. Please wait a few seconds before retrying.',
+  'chat.networkError': '📡 Connection problem. Check your Wi-Fi and try again.',
   'chat.limitReached': '⚠️ You\'ve reached the 20-question daily limit. Come back tomorrow to continue using the AI assistant.',
   'chat.limitReachedBar': 'Daily limit reached — come back tomorrow',
   'chat.suggestion.1': 'How to renew my residence permit?',
@@ -173,7 +175,7 @@ const en: Record<string, string> = {
   'tab.profile': 'Profile',
 
   // AI
-  'ai.notConfigured': 'The AI assistant is not yet configured.\n\nTo activate it, add your free Groq API key in the .env file:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nGet your key at console.groq.com\n\nIn the meantime, check our Guides in the dedicated tab!',
+  'ai.notConfigured': 'The AI assistant is temporarily unavailable. Please try again in a moment.\n\nIn the meantime, check our Guides in the dedicated tab!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renew your residence permit',
@@ -458,6 +460,66 @@ const en: Record<string, string> = {
   'guide.france-travail-inscription.step4.title': 'Monthly update',
   'guide.france-travail-inscription.step4.desc': 'Each month, you must "update" on francetravail.fr to continue receiving your benefits. Indicate if you worked during the month.',
   'guide.france-travail-inscription.step4.tip': 'Set reminders \u2014 forgetting to update can block your benefit payments.',
+
+  // \u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  'auth.welcome.createAccount': 'Create an account',
+  'auth.welcome.haveAccount': 'I already have an account',
+  'auth.welcome.disclaimer': 'Free \u00b7 Your data stays in Europe \ud83c\uddea\ud83c\uddfa',
+
+  'auth.field.email': 'Email address',
+  'auth.field.password': 'Password',
+  'auth.or': 'OR',
+
+  'auth.login.title': 'Welcome back',
+  'auth.login.subtitle': 'Sign in to access your guides and conversations.',
+  'auth.login.forgot': 'Forgot password?',
+  'auth.login.cta': 'Sign in',
+  'auth.login.signupCta': 'Create an account',
+
+  'auth.signup.title': 'Create your account',
+  'auth.signup.subtitle': 'Sync your guides and conversations across devices.',
+  'auth.signup.passwordHint': 'Minimum 10 characters with letters and digits. Compromised passwords are refused.',
+  'auth.signup.legal': 'By creating an account, you accept our terms of service and privacy policy.',
+  'auth.signup.cta': 'Create my account',
+  'auth.signup.haveAccount': 'Already registered?',
+  'auth.signup.loginCta': 'Sign in',
+
+  'auth.forgot.title': 'Forgot password',
+  'auth.forgot.subtitle': 'Enter your email and we will send you a link to reset your password.',
+  'auth.forgot.cta': 'Send the link',
+  'auth.forgot.sentTitle': 'Check your inbox',
+  'auth.forgot.sentDesc': 'If an account exists with this email, you will receive a link to reset your password in a few minutes.',
+  'auth.forgot.backToLogin': 'Back to sign in',
+
+  'auth.verify.title': 'Verify your email',
+  'auth.verify.subtitle': 'We sent a confirmation link to:',
+  'auth.verify.instructions': 'Click the link in the email, then come back here to sign in.',
+  'auth.verify.openMail': 'Open mail app',
+  'auth.verify.noEmail': 'Didn\'t receive the email?',
+  'auth.verify.resend': 'Resend',
+  'auth.verify.resent': 'Email sent \u2014 check your inbox',
+  'auth.verify.alreadyVerified': 'Already verified?',
+  'auth.verify.loginNow': 'Sign in',
+
+  'auth.strength.weak': 'Weak',
+  'auth.strength.fair': 'Fair',
+  'auth.strength.good': 'Good',
+  'auth.strength.strong': 'Strong',
+
+  'auth.error.invalid_email': 'Invalid email address.',
+  'auth.error.weak_password': 'Password too weak. Minimum 10 characters with letters and digits.',
+  'auth.error.invalid_credentials': 'Incorrect email or password.',
+  'auth.error.email_not_confirmed': 'Your email is not verified yet. Check your inbox.',
+  'auth.error.user_already_exists': 'An account already exists with this email.',
+  'auth.error.rate_limited': 'Too many attempts. Please try again in a few minutes.',
+  'auth.error.not_configured': 'Service unavailable. Try again later.',
+  'auth.error.network': 'Connection problem. Check your network.',
+  'auth.error.unknown': 'An error occurred. Try again.',
+
+  'profile.signOut': 'Sign out',
+  'profile.signOutTitle': 'Sign out?',
+  'profile.signOutMessage': 'You will need to sign in again to access your synced data.',
+  'profile.signOutConfirm': 'Sign out',
 };
 
 export default en;

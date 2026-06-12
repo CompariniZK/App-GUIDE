@@ -134,6 +134,8 @@ const es: Record<string, string> = {
   'chat.suggestionsTitle': 'Preguntas frecuentes:',
   'chat.placeholder': 'Haz tu pregunta...',
   'chat.error': 'Lo siento, ocurrió un error. Por favor, inténtalo de nuevo.',
+  'chat.rateLimited': '⚡ Demasiadas preguntas en poco tiempo. Espera unos segundos antes de volver a intentarlo.',
+  'chat.networkError': '📡 Problema de conexión. Verifica tu Wi-Fi e inténtalo de nuevo.',
   'chat.limitReached': '⚠️ Has alcanzado el límite de 20 preguntas por día. Vuelve mañana para seguir usando el asistente IA.',
   'chat.limitReachedBar': 'Límite diario alcanzado — vuelve mañana',
   'chat.suggestion.1': '¿Cómo renovar mi permiso de residencia?',
@@ -173,7 +175,7 @@ const es: Record<string, string> = {
   'tab.profile': 'Perfil',
 
   // AI
-  'ai.notConfigured': 'El asistente de IA aún no está configurado.\n\nPara activarlo, añade tu clave API de Groq (gratuita) en el archivo .env:\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nObtén tu clave en console.groq.com\n\n¡Mientras tanto, consulta nuestras Guías en la pestaña dedicada!',
+  'ai.notConfigured': 'El asistente de IA está temporalmente no disponible. Por favor, inténtalo de nuevo en unos instantes.\n\n¡Mientras tanto, consulta nuestras Guías en la pestaña dedicada!',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renovar tu permiso de residencia',
@@ -458,6 +460,66 @@ const es: Record<string, string> = {
   'guide.france-travail-inscription.step4.title': 'Actualización mensual',
   'guide.france-travail-inscription.step4.desc': 'Cada mes, debes "actualizarte" en francetravail.fr para seguir recibiendo tus prestaciones. Indica si trabajaste durante el mes.',
   'guide.france-travail-inscription.step4.tip': 'Pon recordatorios — olvidar actualizarte puede bloquear el pago de tus prestaciones.',
+
+  // ─── Auth ──────────────────────────────────────────────────────────────
+  'auth.welcome.createAccount': 'Crear una cuenta',
+  'auth.welcome.haveAccount': 'Ya tengo una cuenta',
+  'auth.welcome.disclaimer': 'Gratuito · Tus datos permanecen en Europa 🇪🇺',
+
+  'auth.field.email': 'Correo electrónico',
+  'auth.field.password': 'Contraseña',
+  'auth.or': 'O',
+
+  'auth.login.title': 'Bienvenido de nuevo',
+  'auth.login.subtitle': 'Inicia sesión para acceder a tus guías y conversaciones.',
+  'auth.login.forgot': '¿Olvidaste tu contraseña?',
+  'auth.login.cta': 'Iniciar sesión',
+  'auth.login.signupCta': 'Crear una cuenta',
+
+  'auth.signup.title': 'Crea tu cuenta',
+  'auth.signup.subtitle': 'Sincroniza tus guías y conversaciones entre dispositivos.',
+  'auth.signup.passwordHint': 'Mínimo 10 caracteres con letras y números. Las contraseñas comprometidas son rechazadas.',
+  'auth.signup.legal': 'Al crear una cuenta, aceptas nuestros términos de uso y política de privacidad.',
+  'auth.signup.cta': 'Crear mi cuenta',
+  'auth.signup.haveAccount': '¿Ya registrado?',
+  'auth.signup.loginCta': 'Iniciar sesión',
+
+  'auth.forgot.title': 'Contraseña olvidada',
+  'auth.forgot.subtitle': 'Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.',
+  'auth.forgot.cta': 'Enviar el enlace',
+  'auth.forgot.sentTitle': 'Revisa tu bandeja de entrada',
+  'auth.forgot.sentDesc': 'Si existe una cuenta con este correo, recibirás un enlace para restablecer tu contraseña en unos minutos.',
+  'auth.forgot.backToLogin': 'Volver al inicio de sesión',
+
+  'auth.verify.title': 'Verifica tu correo',
+  'auth.verify.subtitle': 'Enviamos un enlace de confirmación a:',
+  'auth.verify.instructions': 'Haz clic en el enlace del correo y luego vuelve aquí para iniciar sesión.',
+  'auth.verify.openMail': 'Abrir la app de correo',
+  'auth.verify.noEmail': '¿No recibiste el correo?',
+  'auth.verify.resend': 'Reenviar',
+  'auth.verify.resent': 'Correo reenviado — revisa tu bandeja de entrada',
+  'auth.verify.alreadyVerified': '¿Ya verificado?',
+  'auth.verify.loginNow': 'Iniciar sesión',
+
+  'auth.strength.weak': 'Débil',
+  'auth.strength.fair': 'Media',
+  'auth.strength.good': 'Buena',
+  'auth.strength.strong': 'Fuerte',
+
+  'auth.error.invalid_email': 'Correo electrónico inválido.',
+  'auth.error.weak_password': 'Contraseña demasiado débil. Mínimo 10 caracteres con letras y números.',
+  'auth.error.invalid_credentials': 'Correo o contraseña incorrectos.',
+  'auth.error.email_not_confirmed': 'Tu correo aún no está verificado. Revisa tu bandeja de entrada.',
+  'auth.error.user_already_exists': 'Ya existe una cuenta con este correo.',
+  'auth.error.rate_limited': 'Demasiados intentos. Inténtalo de nuevo en unos minutos.',
+  'auth.error.not_configured': 'Servicio no disponible. Inténtalo más tarde.',
+  'auth.error.network': 'Problema de conexión. Verifica tu red.',
+  'auth.error.unknown': 'Ocurrió un error. Inténtalo de nuevo.',
+
+  'profile.signOut': 'Cerrar sesión',
+  'profile.signOutTitle': '¿Cerrar sesión?',
+  'profile.signOutMessage': 'Tendrás que iniciar sesión de nuevo para acceder a tus datos sincronizados.',
+  'profile.signOutConfirm': 'Cerrar sesión',
 };
 
 export default es;

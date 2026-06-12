@@ -68,8 +68,17 @@ export interface ChatMessage {
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 export type RootStackParamList = {
+  Auth: undefined;
   Onboarding: undefined;
   Main: undefined;
+};
+
+export type AuthStackParamList = {
+  AuthWelcome: undefined;
+  Login: undefined;
+  SignUp: undefined;
+  ForgotPassword: undefined;
+  EmailVerification: { email: string };
 };
 
 export type OnboardingStackParamList = {

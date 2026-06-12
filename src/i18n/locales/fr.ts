@@ -134,6 +134,8 @@ const fr: Record<string, string> = {
   'chat.suggestionsTitle': 'Questions fr\u00e9quentes :',
   'chat.placeholder': 'Posez votre question...',
   'chat.error': 'D\u00e9sol\u00e9, une erreur s\'est produite. Veuillez r\u00e9essayer.',
+  'chat.rateLimited': '\u26a1 Beaucoup de questions en peu de temps. Veuillez patienter quelques secondes avant de r\u00e9essayer.',
+  'chat.networkError': '\ud83d\udce1 Probl\u00e8me de connexion. V\u00e9rifiez votre Wi-Fi et r\u00e9essayez.',
   'chat.limitReached': '⚠️ Vous avez atteint la limite de 20 questions aujourd\'hui. Revenez demain pour continuer.',
   'chat.limitReachedBar': 'Limite journalière atteinte — revenez demain',
   'chat.suggestion.1': 'Comment renouveler mon titre de séjour ?',
@@ -173,7 +175,7 @@ const fr: Record<string, string> = {
   'tab.profile': 'Profil',
 
   // AI Service
-  'ai.notConfigured': 'L\'assistant IA n\'est pas encore configuré.\n\nPour l\'activer, ajoutez votre clé API Groq (gratuite) dans le fichier .env :\nEXPO_PUBLIC_GROQ_API_KEY=gsk_xxxxx\n\nObtenez votre clé sur console.groq.com\n\nEn attendant, consultez nos Guides dans l\'onglet dédié !',
+  'ai.notConfigured': 'L\'assistant IA est temporairement indisponible. Veuillez réessayer dans quelques instants.\n\nEn attendant, consultez nos Guides dans l\'onglet dédié !',
 
   // Guide 1: titre-sejour-renouvellement
   'guide.titre-sejour-renouvellement.title': 'Renouveler son titre de s\u00e9jour',
@@ -458,6 +460,66 @@ const fr: Record<string, string> = {
   'guide.france-travail-inscription.step4.title': 'Actualisation mensuelle',
   'guide.france-travail-inscription.step4.desc': 'Chaque mois, vous devez vous "actualiser" sur francetravail.fr pour continuer \u00e0 recevoir vos allocations. Indiquez si vous avez travaill\u00e9 dans le mois.',
   'guide.france-travail-inscription.step4.tip': 'Activez les rappels \u2014 oublier l\'actualisation peut bloquer le versement de vos allocations.',
+
+  // \u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  'auth.welcome.createAccount': 'Cr\u00e9er un compte',
+  'auth.welcome.haveAccount': 'J\'ai d\u00e9j\u00e0 un compte',
+  'auth.welcome.disclaimer': 'Gratuit \u00b7 Vos donn\u00e9es restent en Europe \ud83c\uddea\ud83c\uddfa',
+
+  'auth.field.email': 'Adresse e-mail',
+  'auth.field.password': 'Mot de passe',
+  'auth.or': 'OU',
+
+  'auth.login.title': 'Bon retour',
+  'auth.login.subtitle': 'Connectez-vous pour acc\u00e9der \u00e0 vos guides et conversations.',
+  'auth.login.forgot': 'Mot de passe oubli\u00e9 ?',
+  'auth.login.cta': 'Se connecter',
+  'auth.login.signupCta': 'Cr\u00e9er un compte',
+
+  'auth.signup.title': 'Cr\u00e9er votre compte',
+  'auth.signup.subtitle': 'Synchronisez vos guides et conversations entre vos appareils.',
+  'auth.signup.passwordHint': 'Minimum 10 caract\u00e8res avec lettres et chiffres. Les mots de passe compromis sont refus\u00e9s.',
+  'auth.signup.legal': 'En cr\u00e9ant un compte, vous acceptez nos conditions d\'utilisation et notre politique de confidentialit\u00e9.',
+  'auth.signup.cta': 'Cr\u00e9er mon compte',
+  'auth.signup.haveAccount': 'D\u00e9j\u00e0 inscrit ?',
+  'auth.signup.loginCta': 'Se connecter',
+
+  'auth.forgot.title': 'Mot de passe oubli\u00e9',
+  'auth.forgot.subtitle': 'Entrez votre e-mail et nous vous enverrons un lien pour r\u00e9initialiser votre mot de passe.',
+  'auth.forgot.cta': 'Envoyer le lien',
+  'auth.forgot.sentTitle': 'V\u00e9rifiez votre bo\u00eete e-mail',
+  'auth.forgot.sentDesc': 'Si un compte existe avec cette adresse, vous recevrez un lien pour r\u00e9initialiser votre mot de passe dans quelques minutes.',
+  'auth.forgot.backToLogin': 'Retour \u00e0 la connexion',
+
+  'auth.verify.title': 'V\u00e9rifiez votre e-mail',
+  'auth.verify.subtitle': 'Nous avons envoy\u00e9 un lien de confirmation \u00e0 :',
+  'auth.verify.instructions': 'Cliquez sur le lien dans l\'e-mail, puis revenez ici pour vous connecter.',
+  'auth.verify.openMail': 'Ouvrir l\'application e-mail',
+  'auth.verify.noEmail': 'Vous n\'avez pas re\u00e7u d\'e-mail ?',
+  'auth.verify.resend': 'Renvoyer',
+  'auth.verify.resent': 'E-mail renvoy\u00e9 \u2014 v\u00e9rifiez votre bo\u00eete de r\u00e9ception',
+  'auth.verify.alreadyVerified': 'D\u00e9j\u00e0 v\u00e9rifi\u00e9 ?',
+  'auth.verify.loginNow': 'Se connecter',
+
+  'auth.strength.weak': 'Faible',
+  'auth.strength.fair': 'Moyen',
+  'auth.strength.good': 'Bon',
+  'auth.strength.strong': 'Fort',
+
+  'auth.error.invalid_email': 'Adresse e-mail invalide.',
+  'auth.error.weak_password': 'Mot de passe trop faible. Minimum 10 caract\u00e8res avec lettres et chiffres.',
+  'auth.error.invalid_credentials': 'E-mail ou mot de passe incorrect.',
+  'auth.error.email_not_confirmed': 'Votre e-mail n\'est pas encore v\u00e9rifi\u00e9. V\u00e9rifiez votre bo\u00eete de r\u00e9ception.',
+  'auth.error.user_already_exists': 'Un compte existe d\u00e9j\u00e0 avec cette adresse e-mail.',
+  'auth.error.rate_limited': 'Trop de tentatives. Veuillez r\u00e9essayer dans quelques minutes.',
+  'auth.error.not_configured': 'Service indisponible. R\u00e9essayez plus tard.',
+  'auth.error.network': 'Probl\u00e8me de connexion. V\u00e9rifiez votre r\u00e9seau.',
+  'auth.error.unknown': 'Une erreur est survenue. R\u00e9essayez.',
+
+  'profile.signOut': 'Se d\u00e9connecter',
+  'profile.signOutTitle': 'Se d\u00e9connecter ?',
+  'profile.signOutMessage': 'Vous devrez vous reconnecter pour acc\u00e9der \u00e0 vos donn\u00e9es synchronis\u00e9es.',
+  'profile.signOutConfirm': 'Se d\u00e9connecter',
 };
 
 export default fr;

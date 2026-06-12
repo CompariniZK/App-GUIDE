@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  FlatList, SafeAreaView, StatusBar, KeyboardAvoidingView,
+  FlatList, StatusBar, KeyboardAvoidingView,
   Platform, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChatMessage } from '../../types';
@@ -119,9 +120,22 @@ export default function ChatScreen() {
           })
       );
     } catch (e: any) {
-      const errorContent = e.message === 'API_NOT_CONFIGURED'
-        ? t('ai.notConfigured')
-        : t('chat.error');
+      const code = e?.message || 'UNKNOWN';
+      // Log full code for debugging (dev only)
+      if (__DEV__) console.warn('[chat] AI call failed:', code);
+
+      // Map error codes to friendly user-facing messages
+      let errorContent: string;
+      if (code === 'API_NOT_CONFIGURED') {
+        errorContent = t('ai.notConfigured');
+      } else if (code === 'RATE_LIMITED' || code === 'API_ERROR_429') {
+        errorContent = t('chat.rateLimited');
+      } else if (code === 'NETWORK_ERROR') {
+        errorContent = t('chat.networkError');
+      } else {
+        errorContent = t('chat.error');
+      }
+
       setMessages(prev =>
         prev
           .filter(m => m.id !== 'loading')
@@ -141,7 +155,7 @@ export default function ChatScreen() {
   const showSuggestions = messages.length <= 1;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
       <View style={styles.header}>

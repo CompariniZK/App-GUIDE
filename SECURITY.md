@@ -87,27 +87,29 @@ encryption (see §6).
 
 ## 3. Known remaining risks
 
-### 3.1 `EXPO_PUBLIC_GROQ_API_KEY` is bundled into the client
+### 3.1 ~~`EXPO_PUBLIC_GROQ_API_KEY` bundled into the client~~ — **RESOLVED**
 
-**Severity:** High — architectural.
+**Status:** ✅ Resolved — the Groq key no longer ships in the app bundle.
 
-Any variable prefixed `EXPO_PUBLIC_*` is inlined into the JavaScript
-bundle that ships with the APK/IPA. Anyone who downloads the published
-app can run it through a standard bundle extractor and read the key.
+The Groq integration was moved server-side:
 
-**Why we haven't fixed it yet.** The fix is a backend proxy (see §4).
-The backend exists (`backend/server.js`) but currently uses Anthropic
-Claude, not Groq. Migrating requires:
+- `backend/groqService.js` holds the system prompt + Groq client.
+- `backend/server.js` exposes `POST /api/groq/chat` (helmet, CORS, chat rate
+  limiter, strict input validation, opaque error codes).
+- The mobile client (`src/services/ai.ts`) now `fetch()`es the backend
+  endpoint and never sees `GROQ_API_KEY`.
+- `GROQ_API_KEY` lives only in `backend/.env` (gitignored). The client `.env`
+  has been cleansed of any `EXPO_PUBLIC_GROQ_API_KEY` reference.
 
-1. Adding a Groq endpoint to the backend *or* switching the backend to
-   Groq entirely.
-2. Updating `src/services/ai.ts` to `fetch(API_ENDPOINTS.chat)` instead
-   of calling Groq directly.
-3. Hosting the backend somewhere with HTTPS (Railway / Render / Fly).
-4. Setting `EXPO_PUBLIC_API_URL` in production.
+Side benefit: users on VPNs / flagged carrier IPs (a common case for
+immigrants, who often use VPNs to reach home-country services) no longer hit
+Groq's geo/IP blocks — calls originate from the backend's static IP.
 
-Until then: **rotate the Groq key regularly** and monitor usage at
-https://console.groq.com/usage. Consider setting a monthly spend cap.
+**Remaining hardening on the roadmap:**
+1. Move the 20/day usage cap server-side (currently `AsyncStorage`, easily
+   reset by reinstalling the app — see §3.3).
+2. Once Supabase auth is in production, bind rate limits to `user_id`
+   instead of just IP.
 
 ### 3.2 AsyncStorage is plaintext
 
@@ -153,19 +155,22 @@ input validation.
 
 ## 4. Recommended next steps, in priority order
 
-1. **Rotate the current Groq key** (it has been in a local `.env` since
-   creation and the .env is gitignored, but the key itself is valid and
-   will be bundled into any build produced from this repo).
-2. **Backend proxy migration.** Add a Groq endpoint to `server.js`,
-   point the client at it via `API_ENDPOINTS.chat`, delete the
-   `EXPO_PUBLIC_GROQ_API_KEY` reference from the client. Set a hosted
-   backend URL in `EXPO_PUBLIC_API_URL`.
-3. **Move the 20/day limit to the backend**, keyed per anonymous session.
+1. **Rotate the Groq key** that was previously exposed in the client
+   `.env`. Even though the key has been removed from the app, any build
+   produced from this repo before the migration shipped it. Rotate at
+   https://console.groq.com/keys and update `backend/.env`.
+2. **Host the backend with HTTPS** (Railway / Render / Fly) and set
+   `EXPO_PUBLIC_API_URL` in production builds. The client refuses non-HTTPS
+   URLs in production builds (`src/constants/api.ts`).
+3. **Move the 20/day chat limit server-side** — keyed per `user_id` once
+   Supabase auth is the source of truth (currently in `AsyncStorage`,
+   trivially reset by reinstalling).
 4. **Migrate profile storage to `expo-secure-store`** with a migration
    shim that reads old AsyncStorage data on first boot and moves it.
+   (Auth session is already in SecureStore — this is for profile cache.)
 5. **Certificate pinning** for the backend call in production
-   (`react-native-ssl-pinning` or a `fetch` wrapper that verifies the
-   public key hash). Only worth doing after the backend migration.
+   (`react-native-ssl-pinning` or a `fetch` wrapper verifying the public
+   key hash).
 6. **Set a Groq/Anthropic spend alert** in each provider's dashboard as
    a backstop in case rate limiting is bypassed.
 
