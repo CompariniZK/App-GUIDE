@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  SafeAreaView, StatusBar, Alert,
+  StatusBar, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfile } from '../../context/ProfileContext';
+import { useAuth } from '../../hooks/useAuth';
 import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { AppLanguage } from '../../types';
@@ -30,11 +32,23 @@ const LANGUAGES: AppLanguage[] = ['fr', 'en', 'pt', 'es', 'ar'];
 
 export default function ProfileScreen() {
   const { profile, resetProfile, setProfile, setCity } = useProfile();
+  const { signOut, session, configured } = useAuth();
   const { t } = useTranslation();
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
 
   if (!profile) return null;
+
+  const handleSignOut = () => {
+    Alert.alert(
+      t('profile.signOutTitle'),
+      t('profile.signOutMessage'),
+      [
+        { text: t('profile.resetCancel'), style: 'cancel' },
+        { text: t('profile.signOutConfirm'), style: 'destructive', onPress: signOut },
+      ]
+    );
+  };
 
   const completed = profile.completedGuides.length;
   const saved     = profile.savedGuides.length;
@@ -58,7 +72,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -211,6 +225,13 @@ export default function ProfileScreen() {
           <SettingRow icon="information-circle-outline" label={t('profile.version')} value="1.0.0" last />
         </View>
 
+        {configured && session && (
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={18} color={Colors.primaryLight} />
+            <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
           <Ionicons name="refresh-outline" size={16} color={Colors.error} />
           <Text style={styles.resetText}>{t('profile.reset')}</Text>
@@ -332,6 +353,13 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontWeight: '600',
   },
+  signOutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14,
+    borderRadius: 14, borderWidth: 1.5, borderColor: Colors.primaryLight,
+    marginBottom: 12,
+  },
+  signOutText: { fontSize: 14, color: Colors.primaryLight, fontWeight: '700' },
   resetBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 14,
