@@ -146,6 +146,20 @@ const SecureStoreAdapter = {
   },
 };
 
+// ── Fetch with timeout ──────────────────────────────────────────────────────
+// React Native's fetch has no default timeout, so a stalled connection (cold
+// start, captive portal, flaky mobile network) would hang a request forever and
+// freeze the UI. Abort any Supabase request after 15s so callers can recover.
+const REQUEST_TIMEOUT_MS = 15000;
+
+const fetchWithTimeout: typeof fetch = (input, init) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timer)
+  );
+};
+
 // ── Client ────────────────────────────────────────────────────────────────
 export const supabase: SupabaseClient = createClient(
   SUPABASE_URL ?? 'https://placeholder.supabase.co',
@@ -162,6 +176,7 @@ export const supabase: SupabaseClient = createClient(
       headers: {
         'X-Client-Info': 'boussole-mobile',
       },
+      fetch: fetchWithTimeout,
     },
   }
 );

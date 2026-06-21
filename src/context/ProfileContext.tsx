@@ -81,23 +81,39 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function boot() {
-      if (!configured) {
-        // Fallback: AsyncStorage-only mode (dev / offline)
-        await loadLocal();
-        if (mounted) setIsLoading(false);
-        return;
-      }
-
-      const { data } = await supabase.auth.getSession();
-      sessionRef.current = data.session;
-      if (data.session) {
-        await loadRemote(data.session.user.id);
-      } else {
-        // Not signed in → no profile (Auth flow will handle it)
-        setProfileState(null);
-      }
+    // Safety net: never block the UI on the splash. If anything below stalls
+    // (SecureStore read, Supabase unreachable in a standalone build), show the
+    // app after 8s regardless — the user can still browse guides offline.
+    const failSafe = setTimeout(() => {
       if (mounted) setIsLoading(false);
+    }, 6000);
+
+    async function boot() {
+      try {
+        if (!configured) {
+          // Fallback: AsyncStorage-only mode (dev / offline)
+          await loadLocal();
+          return;
+        }
+
+        const { data } = await supabase.auth.getSession();
+        sessionRef.current = data.session;
+        if (data.session) {
+          await loadRemote(data.session.user.id);
+        } else {
+          // Not signed in → no profile (Auth flow will handle it)
+          setProfileState(null);
+        }
+      } catch (e) {
+        if (__DEV__) console.warn('[profile] boot failed, falling back to local:', (e as Error)?.message);
+        // Last-resort: try the local cache so the app still works
+        try { await loadLocal(); } catch { /* ignore */ }
+      } finally {
+        if (mounted) {
+          clearTimeout(failSafe);
+          setIsLoading(false);
+        }
+      }
     }
 
     boot();
@@ -117,11 +133,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       });
       return () => {
         mounted = false;
+        clearTimeout(failSafe);
         sub.subscription.unsubscribe();
       };
     }
 
-    return () => { mounted = false; };
+    return () => { mounted = false; clearTimeout(failSafe); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

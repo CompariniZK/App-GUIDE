@@ -75,12 +75,28 @@ export function useAuth(): UseAuthResult {
 
     let mounted = true;
 
+    // Safety net: never let the splash hang forever. If getSession() stalls
+    // (e.g. SecureStore read or network hiccup in a standalone build), fall
+    // through to the "not signed in" state after 8s so the UI always appears.
+    const failSafe = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 6000);
+
     // Initial session read
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setSession(data.session ?? null);
+      })
+      .catch((e) => {
+        if (__DEV__) console.warn('[auth] getSession failed:', e?.message || e);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        clearTimeout(failSafe);
+        setLoading(false);
+      });
 
     // Subscribe to auth changes (login, logout, token refresh)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -90,6 +106,7 @@ export function useAuth(): UseAuthResult {
 
     return () => {
       mounted = false;
+      clearTimeout(failSafe);
       sub.subscription.unsubscribe();
     };
   }, [configured]);
