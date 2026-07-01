@@ -16,6 +16,12 @@ import { supabase, isSupabaseConfigured } from '../services/supabase';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_PASSWORD = 10; // matches Supabase setting; do not lower without updating dashboard.
 
+// Where Supabase should send the user after they click the confirmation /
+// password-reset link. Must be a public HTTPS page (localhost fails on the
+// user's phone). This page also needs to be in the Supabase "Redirect URLs"
+// allowlist. See boussole-website/auth-confirme.html.
+const EMAIL_REDIRECT_URL = 'https://boussole.it.com/auth-confirme.html';
+
 export type AuthErrorCode =
   | 'invalid_email'
   | 'weak_password'
@@ -120,6 +126,10 @@ export function useAuth(): UseAuthResult {
       const { error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
+        options: {
+          // Send confirmation email link to our public web page, NOT localhost.
+          emailRedirectTo: EMAIL_REDIRECT_URL,
+        },
       });
       if (error) return { ok: false, error: mapError(error) };
       return { ok: true };
@@ -153,7 +163,9 @@ export function useAuth(): UseAuthResult {
       if (!configured) return { ok: false, error: 'not_configured' as const };
       if (!validateEmail(email)) return { ok: false, error: 'invalid_email' as const };
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: EMAIL_REDIRECT_URL,
+      });
       if (error) return { ok: false, error: mapError(error) };
       return { ok: true };
     },
