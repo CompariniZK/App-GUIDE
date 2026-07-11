@@ -157,6 +157,60 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.normpath(os.path.join(HERE, "..", "assets"))
 os.makedirs(ASSETS, exist_ok=True)
 
+def make_feature_graphic(w=1024, h=500):
+    """
+    Play Store feature graphic. Left: compass + wordmark + tagline.
+    Right: decorative compass motif. Navy background with gold accents.
+    """
+    img = Image.new("RGBA", (w, h), PRIMARY + (255,))
+    d = ImageDraw.Draw(img)
+
+    # Decorative faint circles on the right
+    d.ellipse([w - 180, -120, w + 180, 240], fill=PRIMARY_LIGHT + (60,))
+    d.ellipse([w - 90, 300, w + 250, 640], fill=PRIMARY_LIGHT + (45,))
+
+    # Big compass rose on the right side
+    rc_x, rc_y = int(w * 0.80), h // 2
+    rose_r = int(h * 0.36)
+    draw_compass_rose(d, rc_x, rc_y, rose_r)
+    draw_north_arrow(d, rc_x, rc_y, rose_r)
+
+    # Left gold accent bar
+    d.rectangle([0, 0, 12, h], fill=ACCENT)
+
+    # Small compass badge next to wordmark
+    badge_x, badge_y = 70, int(h * 0.30)
+    br = 44
+    d.ellipse([badge_x, badge_y, badge_x + br * 2, badge_y + br * 2],
+              fill=PRIMARY_LIGHT, outline=ACCENT, width=4)
+    draw_compass_rose(d, badge_x + br, badge_y + br, int(br * 0.72))
+
+    # Fonts
+    def font(path_options, size):
+        for p in path_options:
+            if os.path.exists(p):
+                return ImageFont.truetype(p, size)
+        return ImageFont.load_default()
+
+    bold = ["C:/Windows/Fonts/segoeuib.ttf", "C:/Windows/Fonts/arialbd.ttf"]
+    reg = ["C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf"]
+
+    f_title = font(bold, 92)
+    f_tag = font(reg, 34)
+    f_sub = font(reg, 26)
+
+    tx = badge_x + br * 2 + 34
+    # Wordmark
+    d.text((tx, int(h * 0.28)), "Boussole", fill=WHITE, font=f_title)
+    # Tagline (gold)
+    d.text((70, int(h * 0.60)), "Votre guide en France", fill=ACCENT, font=f_tag)
+    # Subtitle (light)
+    d.text((70, int(h * 0.74)), "Démarches administratives · Assistant IA · 5 langues",
+           fill=(197, 202, 233), font=f_sub)
+
+    return img.convert("RGB")
+
+
 def save(img, name):
     path = os.path.join(ASSETS, name)
     img.save(path, format="PNG", optimize=True)
@@ -174,5 +228,8 @@ save(make_main_icon(512), "playstore-icon.png")
 
 # 48x48 favicon
 save(make_main_icon(48), "favicon.png")
+
+# 1024x500 Play Store feature graphic
+save(make_feature_graphic(1024, 500), "playstore-feature.png")
 
 print("\nDone! Output in:", ASSETS)
