@@ -197,10 +197,30 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (p) {
       setProfileState(p);
       await saveLocal(p);
-    } else {
-      // Profile row exists but incomplete (nationality/situation null) → onboarding pending
-      setProfileState(null);
+      return;
     }
+
+    // Profile row exists but is incomplete (nationality/situation null). Before
+    // forcing onboarding again, check the local cache: if we already have a
+    // complete profile for this user, a previous server save must have failed —
+    // re-sync it to Supabase instead of making the user redo onboarding.
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const local = stored ? (JSON.parse(stored) as UserProfile) : null;
+      if (local && local.id === userId && local.nationality && local.situation) {
+        setProfileState(local);
+        const safe = buildSafePatch(local);
+        safe.onboarding_done = true;
+        const { error: reSyncErr } = await supabase.from('profiles').update(safe).eq('id', userId);
+        if (reSyncErr) console.error('[profile] re-sync failed', reSyncErr.message);
+        return;
+      }
+    } catch (e) {
+      console.error('[profile] re-sync check failed', (e as Error)?.message);
+    }
+
+    // Genuinely new / incomplete → onboarding pending
+    setProfileState(null);
   }, [loadLocal, saveLocal]);
 
   // ── Public API ───────────────────────────────────────────────────────────

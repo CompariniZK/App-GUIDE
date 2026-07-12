@@ -23,7 +23,7 @@ create table if not exists public.profiles (
   full_name       text         check (char_length(full_name) <= 120),
   nationality     text         check (nationality ~ '^[A-Z]{2,3}$'),     -- ISO code
   situation       text         check (situation in (
-                                        'student','worker','asylum-seeker','refugee',
+                                        'new_arrival','student','worker','asylum-seeker','refugee',
                                         'family','resident','tourist','entrepreneur',
                                         'retired','other'
                                       )),
