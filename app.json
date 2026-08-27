@@ -48,7 +48,14 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "Boussole",
+      "shortName": "Boussole",
+      "themeColor": "#1A237E",
+      "backgroundColor": "#1A237E",
+      "description": "Vos démarches administratives en France, simplifiées."
     },
     "plugins": [
       "expo-font",

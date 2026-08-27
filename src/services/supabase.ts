@@ -11,8 +11,11 @@
  */
 
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
+
+const IS_WEB = Platform.OS === 'web';
 
 // ── Env validation ─────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
@@ -146,6 +149,41 @@ const SecureStoreAdapter = {
   },
 };
 
+// ── Web storage adapter ──────────────────────────────────────────────────────
+// expo-secure-store is native-only (Keychain / Keystore) and throws on web.
+// On the web build we fall back to localStorage, which is the standard place
+// Supabase stores sessions in browsers. No chunking needed (no 2KB cap).
+// SSR safety: guard against `window` being undefined.
+const WebStorageAdapter = {
+  async getItem(key: string): Promise<string | null> {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return null;
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      window.localStorage.setItem(key, value);
+    } catch {
+      /* ignore quota / privacy-mode errors */
+    }
+  },
+  async removeItem(key: string): Promise<void> {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      window.localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+// Pick the right storage for the platform.
+const AuthStorage = IS_WEB ? WebStorageAdapter : SecureStoreAdapter;
+
 // ── Fetch with timeout ──────────────────────────────────────────────────────
 // React Native's fetch has no default timeout, so a stalled connection (cold
 // start, captive portal, flaky mobile network) would hang a request forever and
@@ -166,15 +204,17 @@ export const supabase: SupabaseClient = createClient(
   SUPABASE_ANON_KEY ?? 'placeholder-anon-key',
   {
     auth: {
-      storage: SecureStoreAdapter,
+      storage: AuthStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false, // React Native — no URL-based auth
+      // On web, allow Supabase to pick up auth params from the URL (magic
+      // links / OAuth callbacks). On native there is no URL-based auth.
+      detectSessionInUrl: IS_WEB,
       flowType: 'pkce', // PKCE flow is more secure than implicit
     },
     global: {
       headers: {
-        'X-Client-Info': 'boussole-mobile',
+        'X-Client-Info': IS_WEB ? 'boussole-web' : 'boussole-mobile',
       },
       fetch: fetchWithTimeout,
     },
