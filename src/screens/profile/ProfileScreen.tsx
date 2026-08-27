@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { Colors } from '../../constants/colors';
 import { AppLanguage } from '../../types';
 import { useTranslation } from '../../i18n';
 import { CITIES, getCityById } from '../../constants/cities';
+import { confirmDialog } from '../../utils/dialog';
 
 const LANG_LABELS: Record<string, string> = {
   fr: '🇫🇷 Français',
@@ -39,15 +40,15 @@ export default function ProfileScreen() {
 
   if (!profile) return null;
 
-  const handleSignOut = () => {
-    Alert.alert(
-      t('profile.signOutTitle'),
-      t('profile.signOutMessage'),
-      [
-        { text: t('profile.resetCancel'), style: 'cancel' },
-        { text: t('profile.signOutConfirm'), style: 'destructive', onPress: signOut },
-      ]
-    );
+  const handleSignOut = async () => {
+    const ok = await confirmDialog({
+      title: t('profile.signOutTitle'),
+      message: t('profile.signOutMessage'),
+      confirmText: t('profile.signOutConfirm'),
+      cancelText: t('profile.resetCancel'),
+      destructive: true,
+    });
+    if (ok) await signOut();
   };
 
   const completed = profile.completedGuides.length;
@@ -55,15 +56,15 @@ export default function ProfileScreen() {
   const total     = GUIDES.filter(g => g.relevantFor.includes(profile.situation)).length;
   const pct       = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const handleReset = () => {
-    Alert.alert(
-      t('profile.resetTitle'),
-      t('profile.resetMessage'),
-      [
-        { text: t('profile.resetCancel'), style: 'cancel' },
-        { text: t('profile.resetConfirm'), style: 'destructive', onPress: resetProfile },
-      ]
-    );
+  const handleReset = async () => {
+    const ok = await confirmDialog({
+      title: t('profile.resetTitle'),
+      message: t('profile.resetMessage'),
+      confirmText: t('profile.resetConfirm'),
+      cancelText: t('profile.resetCancel'),
+      destructive: true,
+    });
+    if (ok) await resetProfile();
   };
 
   const handleChangeLanguage = (lang: AppLanguage) => {

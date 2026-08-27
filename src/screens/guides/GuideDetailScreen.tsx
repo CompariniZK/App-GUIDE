@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, Linking, Alert, Platform,
+  StatusBar, Linking, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { getCityById, GUIDE_RESOURCE_MAP, RESOURCE_ICONS } from '../../constants
 import { GuideCategory, GuidesStackParamList } from '../../types';
 import { useProfile } from '../../context/ProfileContext';
 import { useTranslation } from '../../i18n';
+import { alertDialog } from '../../utils/dialog';
 
 const CATEGORY_COLORS: Record<GuideCategory, string> = {
   documents: Colors.catDocuments,
@@ -53,7 +54,7 @@ export default function GuideDetailScreen() {
 
   const openLink = (url: string) => {
     Linking.openURL(url).catch(() =>
-      Alert.alert(t('guideDetail.error'), t('guideDetail.errorLink'))
+      alertDialog(t('guideDetail.error'), t('guideDetail.errorLink'))
     );
   };
 
