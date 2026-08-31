@@ -1,0 +1,11 @@
+# Nixpacks build config for the Boussole backend.
+#
+# By default Nixpacks installs with `npm ci`, which wipes node_modules before
+# installing. On Railway that collides with the Docker cache mount at
+# node_modules/.cache and fails with:
+#   EBUSY: resource busy or locked, rmdir '/app/node_modules/.cache'
+#
+# `npm install` installs without the aggressive rmdir, so it doesn't touch the
+# mounted cache. This is a pure-JS Express server, so a plain install is fine.
+[phases.install]
+cmds = ["npm install --no-audit --no-fund"]
