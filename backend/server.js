@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_USER_MESSAGE_LEN as GROQ_MAX_MSG, MAX_HISTORY_MESSAGES as GROQ_MAX_HIST } from './groqService.js';
+import { searchCommunes, getCommuneResources } from './citiesService.js';
 
 dotenv.config();
 
@@ -466,6 +467,44 @@ app.post('/api/groq/chat', chatLimiter, async (req, res) => {
       return res.status(502).json({ error: 'Upstream unavailable' });
     }
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/cities/search?q=...
+ * Search any French commune via the official API Géo. Returns a small list of
+ * { insee, name, department, postalCode, population }.
+ */
+app.get('/api/cities/search', async (req, res) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : '';
+    if (q.trim().length < 2) return res.json({ communes: [] });
+    if (q.length > 80) return res.status(400).json({ error: 'query too long' });
+    const communes = await searchCommunes(q);
+    res.json({ communes });
+  } catch (error) {
+    safeLog('cities.search', error);
+    res.status(502).json({ error: 'City search unavailable' });
+  }
+});
+
+/**
+ * GET /api/cities/:insee/resources?dept=NN
+ * Local public services for a commune, from the official Annuaire de
+ * l'Administration. Returns { resources: [{ name, type, address, phone, ... }] }.
+ */
+app.get('/api/cities/:insee/resources', async (req, res) => {
+  try {
+    const insee = String(req.params.insee || '');
+    if (!/^[0-9A-B]{5}$/i.test(insee)) {
+      return res.status(400).json({ error: 'invalid INSEE code' });
+    }
+    const dept = typeof req.query.dept === 'string' ? req.query.dept.slice(0, 3) : '';
+    const result = await getCommuneResources(insee, dept);
+    res.json(result);
+  } catch (error) {
+    safeLog('cities.resources', error);
+    res.status(502).json({ error: 'City resources unavailable' });
   }
 });
 
