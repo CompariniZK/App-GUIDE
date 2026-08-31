@@ -14,7 +14,7 @@ interface ProfileContextType {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   markGuideCompleted: (guideId: string) => Promise<void>;
   toggleSavedGuide: (guideId: string) => Promise<void>;
-  setCity: (cityId: string) => Promise<void>;
+  setCity: (cityId: string, cityName?: string) => Promise<void>;
   resetProfile: () => Promise<void>;
 }
 
@@ -43,7 +43,17 @@ function rowToProfile(row: DbProfileRow, completedGuides: string[], savedGuides:
     savedGuides,
     createdAt: row.created_at,
   };
-  if (row.city_id) p.cityId = row.city_id;
+  // city_id is stored as "INSEE|Display Name" so the commune name survives
+  // across devices without an extra DB column. Split it back apart.
+  if (row.city_id) {
+    const sep = row.city_id.indexOf('|');
+    if (sep > 0) {
+      p.cityId = row.city_id.slice(0, sep);
+      p.cityName = row.city_id.slice(sep + 1);
+    } else {
+      p.cityId = row.city_id;
+    }
+  }
   return p;
 }
 
@@ -66,7 +76,13 @@ function buildSafePatch(updates: Partial<UserProfile>): Record<string, unknown> 
     safe.language = updates.language;
   }
   if (updates.cityId !== undefined) {
-    safe.city_id = updates.cityId || null;
+    // Persist as "INSEE|Name" (≤60 chars) so the name round-trips.
+    if (!updates.cityId) {
+      safe.city_id = null;
+    } else {
+      const name = (updates.cityName || '').slice(0, 50);
+      safe.city_id = name ? `${updates.cityId}|${name}` : updates.cityId;
+    }
   }
   return safe;
 }
@@ -296,11 +312,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [profile, configured, saveLocal]);
 
-  const setCity = useCallback(async (cityId: string) => {
+  const setCity = useCallback(async (cityId: string, cityName?: string) => {
     if (!profile) return;
     const updated = { ...profile };
-    if (cityId) updated.cityId = cityId;
-    else delete updated.cityId;
+    if (cityId) {
+      updated.cityId = cityId;
+      if (cityName) updated.cityName = cityName;
+      else delete updated.cityName;
+    } else {
+      delete updated.cityId;
+      delete updated.cityName;
+    }
     await setProfile(updated);
   }, [profile, setProfile]);
 

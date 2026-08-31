@@ -67,6 +67,9 @@ const en: Record<string, string> = {
   'city.resources': '{count} local resources available',
   'city.otherTitle': 'My city is not listed',
   'city.otherDesc': 'No problem — you will still have access to all guides.',
+  'city.searchPlaceholder': 'Search your city…',
+  'city.noResults': 'No city found',
+  'city.skip': 'Skip this step',
   'city.cta': 'Start with Boussole',
 
   // Home

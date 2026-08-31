@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar,
+  StatusBar, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
 import { AppLanguage } from '../../types';
 import { useTranslation } from '../../i18n';
-import { CITIES, getCityById } from '../../constants/cities';
+import { searchCommunes, CommuneResult } from '../../services/cities';
 import { confirmDialog } from '../../utils/dialog';
 
 const LANG_LABELS: Record<string, string> = {
@@ -37,6 +37,23 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [cityQuery, setCityQuery] = useState('');
+  const [cityResults, setCityResults] = useState<CommuneResult[]>([]);
+  const [cityLoading, setCityLoading] = useState(false);
+  const cityReqId = useRef(0);
+
+  useEffect(() => {
+    if (!showCityPicker) return;
+    const q = cityQuery.trim();
+    if (q.length < 2) { setCityResults([]); setCityLoading(false); return; }
+    setCityLoading(true);
+    const id = ++cityReqId.current;
+    const handle = setTimeout(async () => {
+      const communes = await searchCommunes(q);
+      if (id === cityReqId.current) { setCityResults(communes); setCityLoading(false); }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [cityQuery, showCityPicker]);
 
   if (!profile) return null;
 
@@ -162,8 +179,8 @@ export default function ProfileScreen() {
             <Ionicons name="location-outline" size={20} color={Colors.textSecondary} />
             <Text style={styles.rowLabel}>Ville partenaire</Text>
             <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>
-                {profile.cityId ? getCityById(profile.cityId)?.name ?? profile.cityId : 'Aucune'}
+              <Text style={styles.rowValue} numberOfLines={1}>
+                {profile.cityName ?? profile.cityId ?? 'Aucune'}
               </Text>
               <Ionicons name={showCityPicker ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
             </View>
@@ -171,12 +188,28 @@ export default function ProfileScreen() {
 
           {showCityPicker && (
             <View style={styles.langPicker}>
+              {/* Search box */}
+              <View style={styles.citySearchWrap}>
+                <Ionicons name="search" size={16} color={Colors.textMuted} />
+                <TextInput
+                  style={styles.citySearchInput}
+                  placeholder={t('city.searchPlaceholder')}
+                  placeholderTextColor={Colors.textMuted}
+                  value={cityQuery}
+                  onChangeText={setCityQuery}
+                  autoCorrect={false}
+                  autoCapitalize="words"
+                />
+                {cityLoading && <ActivityIndicator size="small" color={Colors.primaryLight} />}
+              </View>
+
               {/* Option: no city */}
               <TouchableOpacity
                 style={[styles.langOption, !profile.cityId && styles.langOptionActive]}
                 onPress={async () => {
                   await setCity('');
                   setShowCityPicker(false);
+                  setCityQuery('');
                 }}
               >
                 <Text style={[styles.langOptionText, !profile.cityId && styles.langOptionTextActive]}>
@@ -187,24 +220,28 @@ export default function ProfileScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* All configured cities */}
-              {CITIES.map(city => (
+              {/* Search results */}
+              {cityResults.map(city => (
                 <TouchableOpacity
-                  key={city.id}
-                  style={[styles.langOption, profile.cityId === city.id && styles.langOptionActive]}
+                  key={city.insee}
+                  style={[styles.langOption, profile.cityId === city.insee && styles.langOptionActive]}
                   onPress={async () => {
-                    await setCity(city.id);
+                    await setCity(city.insee, city.name);
                     setShowCityPicker(false);
+                    setCityQuery('');
                   }}
                 >
-                  <Text style={[styles.langOptionText, profile.cityId === city.id && styles.langOptionTextActive]}>
+                  <Text style={[styles.langOptionText, profile.cityId === city.insee && styles.langOptionTextActive]} numberOfLines={1}>
                     🏛 {city.name} ({city.department})
                   </Text>
-                  {profile.cityId === city.id && (
+                  {profile.cityId === city.insee && (
                     <Ionicons name="checkmark-circle" size={18} color={Colors.primaryLight} />
                   )}
                 </TouchableOpacity>
               ))}
+              {cityQuery.trim().length >= 2 && !cityLoading && cityResults.length === 0 && (
+                <Text style={styles.cityNoResults}>{t('city.noResults')}</Text>
+              )}
             </View>
           )}
 
@@ -327,6 +364,15 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.divider,
     paddingVertical: 4,
   },
+  citySearchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginVertical: 8,
+    backgroundColor: Colors.background, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 12, paddingVertical: 9,
+  },
+  citySearchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary, paddingVertical: 0 },
+  cityNoResults: { textAlign: 'center', color: Colors.textMuted, fontSize: 13, paddingVertical: 12 },
   langOption: {
     flexDirection: 'row',
     alignItems: 'center',

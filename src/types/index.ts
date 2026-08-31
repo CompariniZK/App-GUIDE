@@ -16,7 +16,8 @@ export interface UserProfile {
   situation: UserSituation;
   language: AppLanguage;
   arrivalYear?: number;
-  cityId?: string;            // ex: 'la-roche-sur-yon'
+  cityId?: string;            // INSEE code, ex: '85191' (any French commune)
+  cityName?: string;          // display name, ex: 'La Roche-sur-Yon'
   completedGuides: string[];
   savedGuides: string[];
   createdAt: string;

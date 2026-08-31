@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, ScrollView,
+  StatusBar, FlatList, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { OnboardingStackParamList, UserProfile } from '../../types';
 import { Colors } from '../../constants/colors';
 import { useProfile } from '../../context/ProfileContext';
-import { CITIES } from '../../constants/cities';
+import { searchCommunes, CommuneResult } from '../../services/cities';
 import { getLanguageForNationality, useTranslation } from '../../i18n';
 
 type Props = {
@@ -19,18 +19,46 @@ type Props = {
 };
 
 export default function CityScreen({ navigation, route }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<CommuneResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<CommuneResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { setProfile } = useProfile();
   const { t } = useTranslation();
   const { nationality, situation } = route.params;
+  const reqId = useRef(0);
 
-  const handleFinish = async (cityId?: string) => {
+  // Debounced commune search
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const id = ++reqId.current;
+    const handle = setTimeout(async () => {
+      const communes = await searchCommunes(q);
+      if (id === reqId.current) {
+        setResults(communes);
+        setLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  const finish = async (city?: CommuneResult) => {
+    if (submitting) return;
+    setSubmitting(true);
     const profile: UserProfile = {
       id: Date.now().toString(),
       nationality,
       situation,
       language: getLanguageForNationality(nationality),
-      cityId: cityId ?? undefined,
+      cityId: city?.insee,
+      cityName: city?.name,
       completedGuides: [],
       savedGuides: [],
       createdAt: new Date().toISOString(),
@@ -42,7 +70,6 @@ export default function CityScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Header com dots */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
@@ -55,73 +82,89 @@ export default function CityScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      {/* Título */}
       <View style={styles.titleArea}>
         <Text style={styles.title}>{t('city.title')}</Text>
         <Text style={styles.subtitle}>{t('city.subtitle')}</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Cards das cidades disponíveis */}
-        {CITIES.map(city => (
-          <TouchableOpacity
-            key={city.id}
-            style={[styles.card, selected === city.id && styles.cardSelected]}
-            onPress={() => setSelected(city.id)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.cityIconWrap}>
-              <Text style={styles.cityEmoji}>🏙️</Text>
-            </View>
-            <View style={styles.cardText}>
-              <Text style={[styles.cardTitle, selected === city.id && styles.cardTitleSelected]}>
-                {city.name}
-              </Text>
-              <Text style={styles.cardDesc}>{city.department}</Text>
-              <Text style={styles.cardResources}>
-                {t('city.resources', { count: city.resources.length })}
-              </Text>
-            </View>
-            <View style={[styles.radio, selected === city.id && styles.radioSelected]}>
-              {selected === city.id && <View style={styles.radioInner} />}
-            </View>
+      {/* Search box */}
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={18} color={Colors.textMuted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={t('city.searchPlaceholder')}
+          placeholderTextColor={Colors.textMuted}
+          value={query}
+          onChangeText={(v) => { setQuery(v); setSelected(null); }}
+          autoCorrect={false}
+          autoCapitalize="words"
+        />
+        {loading && <ActivityIndicator size="small" color={Colors.primaryLight} />}
+        {!loading && query.length > 0 && (
+          <TouchableOpacity onPress={() => { setQuery(''); setSelected(null); }} hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
           </TouchableOpacity>
-        ))}
+        )}
+      </View>
 
-        {/* Opção "minha cidade não está na lista" */}
-        <TouchableOpacity
-          style={[styles.card, styles.cardOther, selected === '__other' && styles.cardSelected]}
-          onPress={() => setSelected('__other')}
-          activeOpacity={0.75}
-        >
-          <View style={styles.cityIconWrap}>
-            <Text style={styles.cityEmoji}>📍</Text>
-          </View>
-          <View style={styles.cardText}>
-            <Text style={[styles.cardTitle, selected === '__other' && styles.cardTitleSelected]}>
-              {t('city.otherTitle')}
-            </Text>
-            <Text style={styles.cardDesc}>{t('city.otherDesc')}</Text>
-          </View>
-          <View style={[styles.radio, selected === '__other' && styles.radioSelected]}>
-            {selected === '__other' && <View style={styles.radioInner} />}
-          </View>
-        </TouchableOpacity>
-      </ScrollView>
+      {/* Results */}
+      <FlatList
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        data={results}
+        keyExtractor={(item) => item.insee}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          query.trim().length >= 2 && !loading ? (
+            <Text style={styles.empty}>{t('city.noResults')}</Text>
+          ) : null
+        }
+        renderItem={({ item }) => {
+          const isSel = selected?.insee === item.insee;
+          return (
+            <TouchableOpacity
+              style={[styles.card, isSel && styles.cardSelected]}
+              onPress={() => setSelected(item)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.cityIconWrap}>
+                <Ionicons name="location" size={20} color={Colors.primaryLight} />
+              </View>
+              <View style={styles.cardText}>
+                <Text style={[styles.cardTitle, isSel && styles.cardTitleSelected]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.cardDesc} numberOfLines={1}>
+                  {item.postalCode ? `${item.postalCode} · ` : ''}Dép. {item.department}
+                </Text>
+              </View>
+              <View style={[styles.radio, isSel && styles.radioSelected]}>
+                {isSel && <View style={styles.radioInner} />}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+      />
 
       {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btnNext, !selected && styles.btnNextDisabled]}
-          onPress={() => handleFinish(selected === '__other' ? undefined : selected ?? undefined)}
-          disabled={!selected}
+          style={[styles.btnNext, (!selected || submitting) && styles.btnNextDisabled]}
+          onPress={() => finish(selected ?? undefined)}
+          disabled={!selected || submitting}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnNextText}>{t('city.cta')}</Text>
-          <Ionicons name="compass" size={18} color={Colors.primary} />
+          {submitting ? (
+            <ActivityIndicator color={Colors.primary} />
+          ) : (
+            <>
+              <Text style={styles.btnNextText}>{t('city.cta')}</Text>
+              <Ionicons name="compass" size={18} color={Colors.primary} />
+            </>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => finish(undefined)} disabled={submitting} style={styles.skip} hitSlop={8}>
+          <Text style={styles.skipText}>{t('city.skip')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -131,44 +174,43 @@ export default function CityScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 12,
   },
   backBtn: { padding: 4 },
   progress: { flexDirection: 'row', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
   dotActive: { backgroundColor: Colors.primaryLight, width: 20 },
   dotComplete: { backgroundColor: Colors.success, width: 20 },
-  titleArea: { paddingHorizontal: 24, marginBottom: 16 },
+  titleArea: { paddingHorizontal: 24, marginBottom: 14 },
   title: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, marginBottom: 6 },
   subtitle: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
-  list: { paddingHorizontal: 20, gap: 10, paddingBottom: 16 },
+  searchWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 20, marginBottom: 8,
+    backgroundColor: Colors.white, borderRadius: 12,
+    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary, paddingVertical: 0 },
+  list: { flex: 1 },
+  listContent: { paddingHorizontal: 20, paddingVertical: 8, gap: 10 },
+  empty: { textAlign: 'center', color: Colors.textMuted, marginTop: 24, fontSize: 14 },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    gap: 14,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.white, borderRadius: 14, padding: 14,
+    borderWidth: 1.5, borderColor: Colors.border, gap: 14,
   },
   cardSelected: { borderColor: Colors.primaryLight, backgroundColor: Colors.selectedBg },
-  cardOther: { borderStyle: 'dashed' },
   cityIconWrap: {
-    width: 48, height: 48, borderRadius: 14,
+    width: 44, height: 44, borderRadius: 12,
     backgroundColor: 'rgba(26,35,126,0.07)',
     alignItems: 'center', justifyContent: 'center',
   },
-  cityEmoji: { fontSize: 24 },
-  cardText: { flex: 1 },
+  cardText: { flex: 1, minWidth: 0 },
   cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
   cardTitleSelected: { color: Colors.primaryLight },
-  cardDesc: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
-  cardResources: { fontSize: 11, color: Colors.primaryLight, fontWeight: '600', marginTop: 4 },
+  cardDesc: { fontSize: 12, color: Colors.textSecondary },
   radio: {
     width: 22, height: 22, borderRadius: 11,
     borderWidth: 2, borderColor: Colors.border,
@@ -176,16 +218,13 @@ const styles = StyleSheet.create({
   },
   radioSelected: { borderColor: Colors.primaryLight },
   radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.primaryLight },
-  footer: { paddingHorizontal: 20, paddingVertical: 16 },
+  footer: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, gap: 8 },
   btnNext: {
-    backgroundColor: Colors.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    backgroundColor: Colors.accent, borderRadius: 14, paddingVertical: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
   },
   btnNextDisabled: { backgroundColor: Colors.border },
   btnNextText: { color: Colors.primary, fontSize: 16, fontWeight: '800' },
+  skip: { alignItems: 'center', paddingVertical: 8 },
+  skipText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
 });

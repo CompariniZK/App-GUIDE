@@ -67,6 +67,9 @@ const fr: Record<string, string> = {
   'city.resources': '{count} ressources locales disponibles',
   'city.otherTitle': 'Ma ville n\'est pas listée',
   'city.otherDesc': 'Pas de problème — vous accéderez quand même à tous les guides.',
+  'city.searchPlaceholder': 'Rechercher votre ville…',
+  'city.noResults': 'Aucune ville trouvée',
+  'city.skip': 'Passer cette étape',
   'city.cta': 'Démarrer avec Boussole',
 
   // HomeScreen

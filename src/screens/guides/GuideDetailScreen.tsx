@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, Linking, Platform,
@@ -8,7 +8,20 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { GUIDES } from '../../constants/guides';
 import { Colors } from '../../constants/colors';
-import { getCityById, GUIDE_RESOURCE_MAP, RESOURCE_ICONS } from '../../constants/cities';
+import { GUIDE_RESOURCE_MAP } from '../../constants/cities';
+import { getCityResources, LocalResource, ResourceType } from '../../services/cities';
+
+const RESOURCE_ICONS: Record<ResourceType, string> = {
+  prefecture: '🏢',
+  mairie: '🏛️',
+  ccas: '🤝',
+  caf: '👨‍👩‍👧',
+  cpam: '🏥',
+  france_travail: '💼',
+  france_services: '📍',
+  ofii: '🇫🇷',
+  other: '📌',
+};
 import { GuideCategory, GuidesStackParamList } from '../../types';
 import { useProfile } from '../../context/ProfileContext';
 import { useTranslation } from '../../i18n';
@@ -45,12 +58,29 @@ export default function GuideDetailScreen() {
   const isSaved     = profile?.savedGuides.includes(guide.id) ?? false;
   const catColor    = CATEGORY_COLORS[guide.category];
 
-  // Recursos locais relevantes para este guia
-  const city = profile?.cityId ? getCityById(profile.cityId) : undefined;
+  // Local resources relevant to this guide — fetched live from the official
+  // Annuaire de l'Administration (via our backend) for the user's commune.
   const relevantTypes = GUIDE_RESOURCE_MAP[guide.id] ?? [];
-  const localResources = city
-    ? city.resources.filter(r => relevantTypes.includes(r.type))
-    : [];
+  const [localResources, setLocalResources] = useState<LocalResource[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const insee = profile?.cityId;
+    if (!insee) {
+      setLocalResources([]);
+      return;
+    }
+    getCityResources(insee).then((all) => {
+      if (!mounted) return;
+      const wanted = relevantTypes as string[];
+      const filtered = wanted.length > 0
+        ? all.filter(r => wanted.includes(r.type))
+        : all;
+      setLocalResources(filtered);
+    });
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.cityId, guide.id]);
 
   const openLink = (url: string) => {
     Linking.openURL(url).catch(() =>
@@ -172,7 +202,7 @@ export default function GuideDetailScreen() {
           <View style={styles.localBox}>
             <View style={styles.localHeader}>
               <Text style={styles.localTitle}>
-                📍 {t('guideDetail.localTitle', { city: city!.name })}
+                📍 {t('guideDetail.localTitle', { city: profile?.cityName ?? profile?.cityId ?? '' })}
               </Text>
               <Text style={styles.localSub}>{t('guideDetail.localSub')}</Text>
             </View>
@@ -189,7 +219,6 @@ export default function GuideDetailScreen() {
                     </TouchableOpacity>
                   )}
                   {r.address && <Text style={styles.localDetail}>📌 {r.address}</Text>}
-                  {r.hours && <Text style={styles.localHours}>🕐 {r.hours}</Text>}
                   {r.website && (
                     <TouchableOpacity onPress={() => openLink(r.website!)}>
                       <Text style={styles.localLink}>{t('guideDetail.localWebsite')}</Text>
