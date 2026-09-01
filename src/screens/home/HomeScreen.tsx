@@ -112,6 +112,7 @@ export default function HomeScreen() {
                       onPress={() => navigation.navigate('Guides', {
                         screen: 'GuideDetail',
                         params: { guideId: g.id },
+                        initial: false,
                       })}
                       activeOpacity={0.7}
                     >
@@ -149,6 +150,7 @@ export default function HomeScreen() {
                 onPress={() => navigation.navigate('Guides', {
                   screen: 'GuideDetail',
                   params: { guideId: guide.id },
+                  initial: false,
                 })}
               />
             ))}
