@@ -38,6 +38,9 @@ function makeCache(ttlMs) {
 
 const searchCache = makeCache(24 * 60 * 60 * 1000); // 24h
 const resourceCache = makeCache(24 * 60 * 60 * 1000); // 24h
+const deptNameCache = makeCache(30 * 24 * 60 * 60 * 1000); // 30d
+const communeNameCache = makeCache(30 * 24 * 60 * 60 * 1000); // 30d
+const deptServiceCache = makeCache(7 * 24 * 60 * 60 * 1000); // 7d
 let prefectureIndex = null; // { [deptCode]: normalizedResource }
 let prefectureIndexExpires = 0;
 
@@ -198,6 +201,64 @@ async function getPrefectureForDept(dept) {
 }
 
 // ── Public: resources for a commune ──────────────────────────────────────────
+// Department name from its code (needed to query dept-level services by name).
+async function getDeptName(dept) {
+  if (!dept) return '';
+  const cached = deptNameCache.get(dept);
+  if (cached !== undefined) return cached;
+  let name = '';
+  try {
+    const res = await fetch(`https://geo.api.gouv.fr/departements/${encodeURIComponent(dept)}?fields=nom`);
+    if (res.ok) { const d = await res.json(); name = (d && d.nom) || ''; }
+  } catch { /* ignore */ }
+  deptNameCache.set(dept, name);
+  return name;
+}
+
+// Commune name from its INSEE code (used to prefer the office in the user's town).
+async function getCommuneName(insee) {
+  const cached = communeNameCache.get(insee);
+  if (cached !== undefined) return cached;
+  let name = '';
+  try {
+    const res = await fetch(`https://geo.api.gouv.fr/communes/${encodeURIComponent(insee)}?fields=nom`);
+    if (res.ok) { const d = await res.json(); name = (d && d.nom) || ''; }
+  } catch { /* ignore */ }
+  communeNameCache.set(insee, name);
+  return name;
+}
+
+// Departmental services (CAF, CPAM…) are often registered under a different
+// commune than the user's, so the commune query misses them. Look them up by
+// department name and prefer the office located in the user's own commune.
+async function getDeptService(namePattern, type, dept, communeName) {
+  const key = `${type}|${dept}`;
+  let list = deptServiceCache.get(key);
+  if (!list) {
+    const deptName = await getDeptName(dept);
+    if (!deptName) return null;
+    const where = `nom LIKE "${namePattern}" and nom LIKE "${deptName.replace(/"/g, '')}"`;
+    const url = `${ANNUAIRE_URL}?where=${encodeURIComponent(where)}&limit=50` +
+      `&select=nom,adresse,telephone,site_internet,adresse_courriel`;
+    try {
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) return null;
+      const data = await res.json();
+      list = (data.results || []).map(normalizeRecord).filter(Boolean).filter(r => r.type === type);
+    } catch {
+      return null;
+    }
+    deptServiceCache.set(key, list);
+  }
+  if (!list.length) return null;
+  const cn = (communeName || '').toLowerCase();
+  return (
+    (cn && list.find(r => r.name.toLowerCase().includes(cn))) ||
+    list.find(r => /si[èe]ge/i.test(r.name)) ||
+    list[0]
+  );
+}
+
 // Derive the department code from an INSEE commune code.
 // Metropolitan: first 2 digits. Corsica: 2A/2B. Overseas (DOM): first 3 digits.
 function deptFromInsee(insee) {
@@ -243,6 +304,26 @@ async function getCommuneResources(insee, dept) {
     }
   } catch {
     /* préfecture is best-effort */
+  }
+
+  // CAF and CPAM are departmental and are frequently registered under a
+  // different commune than the user's, so add them via a department lookup
+  // when the commune query didn't return them.
+  const deptFallbacks = [
+    { type: 'caf', pattern: "Caisse d'allocations familiales" },
+    { type: 'cpam', pattern: "Caisse primaire d'assurance maladie" },
+  ];
+  const missing = deptFallbacks.filter(f => !resources.some(r => r.type === f.type));
+  if (missing.length > 0) {
+    const communeName = await getCommuneName(code);
+    for (const f of missing) {
+      try {
+        const svc = await getDeptService(f.pattern, f.type, department, communeName);
+        if (svc) resources.push(svc);
+      } catch {
+        /* dept service is best-effort */
+      }
+    }
   }
 
   // Prefer the "main" préfecture record (name starting with "Préfecture") over
