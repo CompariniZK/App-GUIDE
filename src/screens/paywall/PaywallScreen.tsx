@@ -20,7 +20,7 @@ const PERKS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: 'document-text-outline', text: 'Tous les guides officiels, pas-à-pas' },
   { icon: 'chatbubble-ellipses-outline', text: 'Assistant IA juridique illimité' },
   { icon: 'location-outline', text: 'Services locaux de toute la France' },
-  { icon: 'infinite-outline', text: 'Accès à vie — paiement unique, sans abonnement' },
+  { icon: 'close-circle-outline', text: 'Sans engagement — résiliable à tout moment' },
 ];
 
 export default function PaywallScreen() {
@@ -84,12 +84,12 @@ export default function PaywallScreen() {
           </View>
           <Text style={styles.title}>Débloquez Boussole</Text>
           <Text style={styles.subtitle} numberOfLines={3}>
-            Un paiement unique pour un accès complet et à vie à tous les guides et à l’assistant IA.
+            Un abonnement mensuel pour un accès complet à tous les guides et à l’assistant IA juridique.
           </Text>
 
           <View style={styles.priceRow}>
             <Text style={styles.price}>1,99 €</Text>
-            <Text style={styles.priceNote}>paiement unique</Text>
+            <Text style={styles.priceNote}>/ mois</Text>
           </View>
         </View>
 
@@ -114,7 +114,7 @@ export default function PaywallScreen() {
             ) : (
               <>
                 <Ionicons name="card-outline" size={18} color={Colors.primary} />
-                <Text style={styles.btnPrimaryText}>Débloquer pour 1,99 €</Text>
+                <Text style={styles.btnPrimaryText}>S’abonner — 1,99 €/mois</Text>
               </>
             )}
           </TouchableOpacity>

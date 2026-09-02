@@ -29,7 +29,7 @@ const {
 // Amount is fixed server-side so the client can never choose the price.
 const PRICE_CENTS = parseInt(process.env.STRIPE_PRICE_EUR_CENTS || '199', 10);
 const CURRENCY = 'eur';
-const PRODUCT_NAME = 'Boussole — Accès complet';
+const PRODUCT_NAME = 'Boussole — Abonnement mensuel';
 
 // Where Stripe sends the user back after checkout. Configurable per env.
 const APP_URL = (WEB_APP_URL || 'https://boussole-web.netlify.app').replace(/\/$/, '');
@@ -99,7 +99,7 @@ export async function createCheckoutSession(req, res) {
   // 3. Create the Checkout session.
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
+      mode: 'subscription',
       payment_method_types: ['card'],
       client_reference_id: user.id,
       customer_email: user.email || undefined,
@@ -109,11 +109,15 @@ export async function createCheckoutSession(req, res) {
           price_data: {
             currency: CURRENCY,
             unit_amount: PRICE_CENTS,
+            recurring: { interval: 'month' },
             product_data: { name: PRODUCT_NAME },
           },
         },
       ],
+      // Propagate our user id onto the subscription so lifecycle events
+      // (cancel, payment failure) can be mapped back to the right user.
       metadata: { user_id: user.id },
+      subscription_data: { metadata: { user_id: user.id } },
       success_url: `${APP_URL}/?paid=1`,
       cancel_url: `${APP_URL}/?canceled=1`,
     });
@@ -145,30 +149,78 @@ export async function handleWebhook(req, res) {
     return res.status(400).send(`Webhook Error: ${err?.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const userId = session.client_reference_id || session.metadata?.user_id;
-    const paid = session.payment_status === 'paid';
-
-    if (userId && paid) {
-      try {
-        await supabase.from('profiles').update({ has_paid: true }).eq('id', userId);
-        await supabase.from('payments').insert({
-          user_id: userId,
-          stripe_session: session.id,
-          amount_cents: session.amount_total ?? PRICE_CENTS,
-          currency: session.currency || CURRENCY,
-          status: session.payment_status,
-        });
-        console.log(`[stripe] user ${userId} marked has_paid=true`);
-      } catch (err) {
-        console.error('[stripe] failed to mark user paid:', err?.message || err);
-        // 500 → Stripe retries the webhook, so this is self-healing.
-        return res.status(500).send('DB update failed');
+  try {
+    switch (event.type) {
+      // ── Subscription started / first payment succeeded → grant access ──────
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const userId = session.client_reference_id || session.metadata?.user_id;
+        const paid = session.payment_status === 'paid' || session.status === 'complete';
+        if (userId && paid) {
+          await supabase
+            .from('profiles')
+            .update({
+              has_paid: true,
+              stripe_customer_id: session.customer || null,
+              stripe_subscription_id: session.subscription || null,
+            })
+            .eq('id', userId);
+          await supabase.from('payments').insert({
+            user_id: userId,
+            stripe_session: session.id,
+            amount_cents: session.amount_total ?? PRICE_CENTS,
+            currency: session.currency || CURRENCY,
+            status: session.payment_status,
+          });
+          console.log(`[stripe] user ${userId} subscribed → has_paid=true`);
+        }
+        break;
       }
+
+      // ── Subscription cancelled or ended → revoke access ───────────────────
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        await revokeBySubscription(supabase, sub);
+        break;
+      }
+
+      // ── Renewal payment failed after retries → revoke (Stripe eventually ──
+      //    cancels, but we cut access on the terminal failure too) ───────────
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        // Only revoke once Stripe has exhausted retries for this invoice.
+        if (invoice.next_payment_attempt == null) {
+          await revokeByCustomer(supabase, invoice.customer);
+        }
+        break;
+      }
+
+      default:
+        break;
     }
+  } catch (err) {
+    console.error('[stripe] webhook handler failed:', err?.message || err);
+    // 500 → Stripe retries the webhook, so this is self-healing.
+    return res.status(500).send('Handler failed');
   }
 
-  // Acknowledge all other event types so Stripe stops retrying.
   return res.status(200).json({ received: true });
+}
+
+// Revoke access for the user tied to a subscription. Prefer the user_id we
+// stamped in metadata; fall back to the Stripe customer id.
+async function revokeBySubscription(supabase, sub) {
+  const userId = sub?.metadata?.user_id;
+  if (userId) {
+    await supabase.from('profiles').update({ has_paid: false }).eq('id', userId);
+    console.log(`[stripe] user ${userId} subscription ended → has_paid=false`);
+    return;
+  }
+  await revokeByCustomer(supabase, sub?.customer);
+}
+
+async function revokeByCustomer(supabase, customerId) {
+  if (!customerId) return;
+  await supabase.from('profiles').update({ has_paid: false }).eq('stripe_customer_id', customerId);
+  console.log(`[stripe] customer ${customerId} → has_paid=false`);
 }
