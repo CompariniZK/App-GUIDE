@@ -23,34 +23,46 @@ const PERKS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: 'close-circle-outline', text: 'Sans engagement — résiliable à tout moment' },
 ];
 
+// How long we keep checking after the user returns from Stripe, before giving
+// up and showing the manual recovery. The webhook normally lands in 1-3s, but
+// we allow generous headroom for a slow/retried delivery. 20 × 2s ≈ 40s.
+const POLL_ATTEMPTS = 20;
+const POLL_INTERVAL_MS = 2000;
+
 export default function PaywallScreen() {
   const { refreshPaymentStatus } = useProfile();
   const { signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  // True the whole time we're auto-confirming a fresh payment (?paid=1). While
+  // it's on, we show a dedicated "confirming" screen instead of the paywall, so
+  // a paying user never sees "subscribe again" during the webhook's brief lag.
+  const [confirming, setConfirming] = useState(() => returnedFromSuccessfulCheckout());
+  // Set when confirmation ran the full window without success — surface a clear
+  // message instead of silently dropping the user back on the sales screen.
+  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
 
-  // Coming back from Stripe (?paid=1): the webhook may lag a beat, so poll a
-  // few times before giving up. When has_paid flips true, the navigator swaps
-  // this screen out automatically.
+  // Auto-confirm loop: poll has_paid until it flips true (navigator then swaps
+  // this screen out on its own) or we exhaust the window.
   useEffect(() => {
-    if (!returnedFromSuccessfulCheckout()) return;
+    if (!confirming) return;
     let cancelled = false;
-    setVerifying(true);
 
     (async () => {
-      for (let i = 0; i < 6 && !cancelled; i++) {
+      for (let i = 0; i < POLL_ATTEMPTS && !cancelled; i++) {
         const paid = await refreshPaymentStatus();
-        if (paid) break;
-        await new Promise(r => setTimeout(r, 1500));
+        if (paid) return; // success → navigator unmounts this screen
+        await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
       }
       if (!cancelled) {
-        setVerifying(false);
+        setConfirming(false);
+        setConfirmTimedOut(true);
         clearCheckoutQueryParams();
       }
     })();
 
     return () => { cancelled = true; };
-  }, [refreshPaymentStatus]);
+  }, [confirming, refreshPaymentStatus]);
 
   const handlePay = useCallback(async () => {
     setBusy(true);
@@ -71,8 +83,33 @@ export default function PaywallScreen() {
     setVerifying(true);
     const paid = await refreshPaymentStatus();
     setVerifying(false);
-    if (!paid) alertDialog('Paiement', 'Aucun paiement détecté pour le moment.');
+    if (!paid) {
+      alertDialog(
+        'Paiement',
+        'Nous n’avons pas encore reçu la confirmation. Si vous venez de payer, ' +
+        'patientez un instant puis réessayez.',
+      );
+    }
   }, [refreshPaymentStatus]);
+
+  // ── Dedicated confirmation screen (right after returning from Stripe) ───────
+  if (confirming) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+        <View style={styles.confirmWrap}>
+          <View style={styles.logoCircle}>
+            <Ionicons name="checkmark-circle-outline" size={48} color={Colors.accent} />
+          </View>
+          <Text style={styles.title}>Merci !</Text>
+          <Text style={styles.subtitle} numberOfLines={3}>
+            Confirmation de votre paiement en cours…{'\n'}Cela ne prend que quelques instants.
+          </Text>
+          <ActivityIndicator size="large" color={Colors.accent} style={{ marginTop: 24 }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -92,6 +129,16 @@ export default function PaywallScreen() {
             <Text style={styles.priceNote}>/ mois</Text>
           </View>
         </View>
+
+        {confirmTimedOut && (
+          <View style={styles.notice}>
+            <Ionicons name="time-outline" size={18} color={Colors.accent} />
+            <Text style={styles.noticeText} numberOfLines={3}>
+              Si vous venez de payer, votre accès s’active dans un instant.
+              Appuyez sur « J’ai déjà payé » ci-dessous.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.perks}>
           {PERKS.map((p, i) => (
@@ -149,6 +196,7 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.primary },
   scroll: { flexGrow: 1, justifyContent: 'space-between', paddingTop: 24 },
+  confirmWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   hero: { alignItems: 'center', paddingHorizontal: 32, paddingVertical: 20 },
   logoCircle: {
     width: 84, height: 84, borderRadius: 42,
@@ -163,6 +211,13 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 18 },
   price: { fontSize: 40, fontWeight: '900', color: Colors.accent },
   priceNote: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
+  notice: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 24, marginTop: 4,
+    backgroundColor: 'rgba(245,166,35,0.12)',
+    borderRadius: 12, padding: 12,
+  },
+  noticeText: { flex: 1, fontSize: 12.5, color: Colors.white, lineHeight: 17 },
   perks: { paddingHorizontal: 28, paddingVertical: 12, gap: 12 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   perkText: { flex: 1, fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 19 },
