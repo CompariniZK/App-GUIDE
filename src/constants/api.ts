@@ -49,4 +49,5 @@ export const API_ENDPOINTS = {
   chat:   `${API_BASE_URL}/api/chat`,
   health: `${API_BASE_URL}/api/health`,
   guides: `${API_BASE_URL}/api/guides`,
+  stripeCheckout: `${API_BASE_URL}/api/stripe/create-checkout-session`,
 };

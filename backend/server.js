@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_USER_MESSAGE_LEN as GROQ_MAX_MSG, MAX_HISTORY_MESSAGES as GROQ_MAX_HIST } from './groqService.js';
 import { searchCommunes, getCommuneResources } from './citiesService.js';
+import { createCheckoutSession, handleWebhook, stripeConfigured } from './stripeService.js';
 
 dotenv.config();
 
@@ -59,6 +60,15 @@ app.use(
     credentials: false,
     maxAge: 600,
   }),
+);
+
+// ─── Stripe webhook (RAW body) ───────────────────────────────────────────────
+// Must be registered BEFORE express.json(), because Stripe signature
+// verification needs the unparsed request body.
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  handleWebhook,
 );
 
 // ─── Body size limit ───────────────────────────────────────────────────────────
@@ -509,11 +519,18 @@ app.get('/api/cities/:insee/resources', async (req, res) => {
 });
 
 /**
+ * POST /api/stripe/create-checkout-session
+ * Auth: "Authorization: Bearer <supabase access_token>".
+ * Returns { url } to redirect the user to Stripe Checkout (one-time €1.99).
+ */
+app.post('/api/stripe/create-checkout-session', chatLimiter, createCheckoutSession);
+
+/**
  * GET /api/health
  * Health check — intentionally minimal, does not leak runtime info.
  */
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', stripe: stripeConfigured() });
 });
 
 /**

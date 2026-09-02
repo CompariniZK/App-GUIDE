@@ -70,6 +70,7 @@ export interface ChatMessage {
 // ─── Navigation ──────────────────────────────────────────────────────────────
 export type RootStackParamList = {
   Auth: undefined;
+  Paywall: undefined;
   Onboarding: undefined;
   Main: undefined;
 };

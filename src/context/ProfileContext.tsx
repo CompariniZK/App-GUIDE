@@ -16,6 +16,10 @@ interface ProfileContextType {
   toggleSavedGuide: (guideId: string) => Promise<void>;
   setCity: (cityId: string, cityName?: string) => Promise<void>;
   resetProfile: () => Promise<void>;
+  /** Web paywall: whether the signed-in user has paid the one-time access fee. */
+  hasPaid: boolean;
+  /** Re-query has_paid from Supabase (e.g. after returning from Stripe). */
+  refreshPaymentStatus: () => Promise<boolean>;
 }
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
@@ -90,8 +94,33 @@ function buildSafePatch(updates: Partial<UserProfile>): Record<string, unknown> 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasPaid, setHasPaid] = useState(false);
   const sessionRef = useRef<Session | null>(null);
   const configured = isSupabaseConfigured();
+
+  // ── Payment status (web paywall) ───────────────────────────────────────────
+  // Tracked independently of `profile`, because payment happens BEFORE
+  // onboarding — at that point the profile row is still incomplete (null).
+  const refreshPaymentStatus = useCallback(async (): Promise<boolean> => {
+    const sess = sessionRef.current;
+    if (!configured || !sess) {
+      setHasPaid(false);
+      return false;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('has_paid')
+        .eq('id', sess.user.id)
+        .maybeSingle();
+      if (error) return hasPaid; // keep last known value on transient error
+      const paid = !!data?.has_paid;
+      setHasPaid(paid);
+      return paid;
+    } catch {
+      return hasPaid;
+    }
+  }, [configured, hasPaid]);
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -115,7 +144,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const { data } = await supabase.auth.getSession();
         sessionRef.current = data.session;
         if (data.session) {
-          await loadRemote(data.session.user.id);
+          await Promise.all([
+            loadRemote(data.session.user.id),
+            refreshPaymentStatus(),
+          ]);
         } else {
           // Not signed in → no profile (Auth flow will handle it)
           setProfileState(null);
@@ -140,11 +172,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         sessionRef.current = newSession;
         if (event === 'SIGNED_OUT' || !newSession) {
           setProfileState(null);
+          setHasPaid(false);
           await AsyncStorage.removeItem(STORAGE_KEY);
           return;
         }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          await loadRemote(newSession.user.id);
+          await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
         }
       });
       return () => {
@@ -345,6 +378,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         toggleSavedGuide,
         setCity,
         resetProfile,
+        hasPaid,
+        refreshPaymentStatus,
       }}
     >
       {children}
