@@ -16,7 +16,9 @@
  */
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+// llama-3.3-70b-versatile was decommissioned by Groq on 2026-08-16. Default to
+// GPT-OSS 120B (Groq's recommended replacement); override with GROQ_MODEL.
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 // Caps — must match (or be stricter than) the client-side caps in src/services/ai.ts
 const MAX_USER_MESSAGE_LEN = 1000;
