@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_USER_MESSAGE_LEN as GROQ_MAX_MSG, MAX_HISTORY_MESSAGES as GROQ_MAX_HIST } from './groqService.js';
 import { searchCommunes, getCommuneResources } from './citiesService.js';
 import { createCheckoutSession, handleWebhook, stripeConfigured } from './stripeService.js';
+import { requireAuth, authConfigured } from './authMiddleware.js';
 
 dotenv.config();
 
@@ -312,7 +313,7 @@ function safeLog(label, err) {
  * POST /api/chat
  * Chat avec l'IA Boussole
  */
-app.post('/api/chat', chatLimiter, async (req, res) => {
+app.post('/api/chat', chatLimiter, requireAuth, async (req, res) => {
   try {
     const body = req.body || {};
     const { message, language, cityId } = body;
@@ -402,7 +403,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
  *   { reply: string }   on success
  *   { error: string }   on failure (no upstream details leaked)
  */
-app.post('/api/groq/chat', chatLimiter, async (req, res) => {
+app.post('/api/groq/chat', chatLimiter, requireAuth, async (req, res) => {
   try {
     const body = req.body || {};
     const { message, history, profile } = body;
@@ -485,7 +486,7 @@ app.post('/api/groq/chat', chatLimiter, async (req, res) => {
  * Search any French commune via the official API Géo. Returns a small list of
  * { insee, name, department, postalCode, population }.
  */
-app.get('/api/cities/search', async (req, res) => {
+app.get('/api/cities/search', requireAuth, async (req, res) => {
   try {
     const q = typeof req.query.q === 'string' ? req.query.q : '';
     if (q.trim().length < 2) return res.json({ communes: [] });
@@ -503,7 +504,7 @@ app.get('/api/cities/search', async (req, res) => {
  * Local public services for a commune, from the official Annuaire de
  * l'Administration. Returns { resources: [{ name, type, address, phone, ... }] }.
  */
-app.get('/api/cities/:insee/resources', async (req, res) => {
+app.get('/api/cities/:insee/resources', requireAuth, async (req, res) => {
   try {
     const insee = String(req.params.insee || '');
     if (!/^[0-9A-B]{5}$/i.test(insee)) {
@@ -530,7 +531,7 @@ app.post('/api/stripe/create-checkout-session', chatLimiter, createCheckoutSessi
  * Health check — intentionally minimal, does not leak runtime info.
  */
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', stripe: stripeConfigured() });
+  res.json({ status: 'ok', stripe: stripeConfigured(), auth: authConfigured() });
 });
 
 /**

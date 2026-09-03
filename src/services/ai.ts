@@ -17,6 +17,7 @@
 
 import { ChatMessage, UserProfile } from '../types';
 import { API_BASE_URL } from '../constants/api';
+import { getAuthHeader } from './authHeader';
 
 // ─── Limits (mirror the backend caps — backend re-enforces) ──────────────────
 const MAX_USER_MESSAGE_LEN = 1000;
@@ -82,10 +83,11 @@ export async function callBoussoleAI(
     profile: safeProfile,
   });
 
+  const authHeader = await getAuthHeader();
   const doFetch = () =>
     fetch(GROQ_CHAT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...authHeader },
       body: payload,
     });
 
