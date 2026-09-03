@@ -16,8 +16,12 @@ interface ProfileContextType {
   toggleSavedGuide: (guideId: string) => Promise<void>;
   setCity: (cityId: string, cityName?: string) => Promise<void>;
   resetProfile: () => Promise<void>;
-  /** Web paywall: whether the signed-in user has paid the one-time access fee. */
-  hasPaid: boolean;
+  /**
+   * Web paywall: whether the signed-in user has an active subscription.
+   * `null` = not determined yet (still loading) — callers must treat this as
+   * "unknown", NOT as "unpaid", to avoid flashing the paywall before we know.
+   */
+  hasPaid: boolean | null;
   /** Re-query has_paid from Supabase (e.g. after returning from Stripe). */
   refreshPaymentStatus: () => Promise<boolean>;
 }
@@ -94,7 +98,8 @@ function buildSafePatch(updates: Partial<UserProfile>): Record<string, unknown> 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasPaid, setHasPaid] = useState(false);
+  // null = payment status not yet determined (see ProfileContextType.hasPaid).
+  const [hasPaid, setHasPaid] = useState<boolean | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const configured = isSupabaseConfigured();
 
@@ -113,14 +118,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .select('has_paid')
         .eq('id', sess.user.id)
         .maybeSingle();
-      if (error) return hasPaid; // keep last known value on transient error
+      if (error) {
+        // On a transient error, don't downgrade a known-paid state; but if we
+        // never determined it, settle on false so the UI can't hang on splash.
+        setHasPaid(prev => (prev === null ? false : prev));
+        return false;
+      }
       const paid = !!data?.has_paid;
       setHasPaid(paid);
       return paid;
     } catch {
-      return hasPaid;
+      setHasPaid(prev => (prev === null ? false : prev));
+      return false;
     }
-  }, [configured, hasPaid]);
+  }, [configured]);
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -172,11 +183,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         sessionRef.current = newSession;
         if (event === 'SIGNED_OUT' || !newSession) {
           setProfileState(null);
-          setHasPaid(false);
+          setHasPaid(null);
           await AsyncStorage.removeItem(STORAGE_KEY);
           return;
         }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          // Reset to "unknown" so the navigator waits (splash) instead of
+          // briefly flashing the paywall while we re-check the subscription.
+          setHasPaid(null);
           await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
         }
       });

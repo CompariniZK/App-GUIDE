@@ -22,8 +22,14 @@ export default function AppNavigator() {
   const { isLoading: profileLoading, hasCompletedOnboarding, hasPaid } = useProfile();
   const { session, loading: authLoading, configured } = useAuth();
 
+  // While signed in on the web, we must know the subscription status before
+  // routing — otherwise a paid user briefly sees the paywall on every load.
+  // `hasPaid === null` means "not determined yet" → keep the splash up.
+  const waitingForPayment =
+    configured && !!session && PAYWALL_ENABLED && hasPaid === null;
+
   // Show splash while we figure out the user's state
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || waitingForPayment) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.primary }}>
         <ActivityIndicator size="large" color={Colors.accent} />
@@ -34,15 +40,15 @@ export default function AppNavigator() {
   // Decide which navigator to mount:
   //  1. Supabase not configured (dev only) → fall back to old behaviour so the app still works
   //  2. Not signed in → AuthNavigator
-  //  3. Signed in but hasn't paid (web only) → Paywall
+  //  3. Signed in but not subscribed (web only) → Paywall
   //  4. Signed in but onboarding incomplete → OnboardingNavigator
-  //  5. Signed in + paid + onboarding done → Main
+  //  5. Signed in + subscribed + onboarding done → Main
   let initialRoute: keyof RootStackParamList;
   if (!configured) {
     initialRoute = hasCompletedOnboarding ? 'Main' : 'Onboarding';
   } else if (!session) {
     initialRoute = 'Auth';
-  } else if (PAYWALL_ENABLED && !hasPaid) {
+  } else if (PAYWALL_ENABLED && hasPaid === false) {
     initialRoute = 'Paywall';
   } else if (!hasCompletedOnboarding) {
     initialRoute = 'Onboarding';

@@ -155,7 +155,16 @@ export function useAuth(): UseAuthResult {
 
   const signOut = useCallback(async () => {
     if (!configured) return;
-    await supabase.auth.signOut();
+    // scope: 'local' clears the session immediately from local storage without
+    // waiting on a server round-trip that can hang/fail on the web and leave
+    // the user stuck "logged in". onAuthStateChange(SIGNED_OUT) still fires.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      if (__DEV__) console.warn('[auth] signOut error:', (e as Error)?.message || e);
+    }
+    // Belt-and-suspenders: flip this instance's state even if the event is missed.
+    setSession(null);
   }, [configured]);
 
   const resetPassword = useCallback(
