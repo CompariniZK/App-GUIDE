@@ -188,9 +188,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           return;
         }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          // Reset to "unknown" so the navigator waits (splash) instead of
-          // briefly flashing the paywall while we re-check the subscription.
-          setHasPaid(null);
+          // Re-sync in the background. Do NOT blank hasPaid here: TOKEN_REFRESHED
+          // fires when the tab regains focus, and blanking would drop the whole
+          // app back to the splash — and hang there if this refetch stalls on a
+          // socket that went stale while the tab was backgrounded. hasPaid is
+          // already null after SIGNED_OUT, so a fresh login still shows the
+          // splash (not the paywall) until the check resolves.
           await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
         }
       });
