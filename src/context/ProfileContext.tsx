@@ -5,6 +5,10 @@ import { supabase, isSupabaseConfigured } from '../services/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 const STORAGE_KEY = '@boussole_profile';
+// Cache the paid status per user so returning subscribers enter instantly
+// (no splash/hang while we re-verify) — the server value still wins once it
+// arrives. Keyed by user id to support multiple accounts on one device.
+const PAID_CACHE_PREFIX = '@boussole_haspaid:';
 
 interface ProfileContextType {
   profile: UserProfile | null;
@@ -126,6 +130,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
       const paid = !!data?.has_paid;
       setHasPaid(paid);
+      try { await AsyncStorage.setItem(PAID_CACHE_PREFIX + sess.user.id, paid ? '1' : '0'); } catch { /* ignore */ }
       return paid;
     } catch {
       setHasPaid(prev => (prev === null ? false : prev));
@@ -155,6 +160,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const { data } = await supabase.auth.getSession();
         sessionRef.current = data.session;
         if (data.session) {
+          // Seed hasPaid from the local cache FIRST, so the navigator never
+          // hangs on "unknown" (null) for a returning subscriber even if the
+          // failsafe timer fires or the network is slow. The re-check below
+          // then confirms/corrects it against the server.
+          try {
+            const cached = await AsyncStorage.getItem(PAID_CACHE_PREFIX + data.session.user.id);
+            if (cached === '1') setHasPaid(true);
+            else if (cached === '0') setHasPaid(false);
+          } catch { /* ignore */ }
           await Promise.all([
             loadRemote(data.session.user.id),
             refreshPaymentStatus(),

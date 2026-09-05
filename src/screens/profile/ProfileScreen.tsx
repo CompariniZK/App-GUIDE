@@ -36,7 +36,7 @@ const LANGUAGES: AppLanguage[] = ['fr', 'en', 'pt', 'es', 'ar'];
 
 export default function ProfileScreen() {
   const { profile, resetProfile, setProfile, setCity, hasPaid } = useProfile();
-  const { signOut, session, configured } = useAuth();
+  const { signOut, configured } = useAuth();
   const { t } = useTranslation();
   const [portalBusy, setPortalBusy] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
@@ -277,7 +277,7 @@ export default function ProfileScreen() {
           <SettingRow icon="information-circle-outline" label={t('profile.version')} value="1.0.0" last />
         </View>
 
-        {IS_WEB && configured && session && hasPaid === true && (
+        {IS_WEB && configured && hasPaid === true && (
           <TouchableOpacity
             style={styles.manageBtn}
             onPress={handleManageSubscription}
@@ -295,7 +295,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        {configured && session && (
+        {configured && (
           <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={18} color={Colors.primaryLight} />
             <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
