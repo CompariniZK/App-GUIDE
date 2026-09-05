@@ -32,7 +32,7 @@ const CURRENCY = 'eur';
 const PRODUCT_NAME = 'Boussole — Abonnement mensuel';
 
 // Where Stripe sends the user back after checkout. Configurable per env.
-const APP_URL = (WEB_APP_URL || 'https://boussole-web.netlify.app').replace(/\/$/, '');
+const APP_URL = (WEB_APP_URL || 'https://boussole-app.vercel.app').replace(/\/$/, '');
 
 // ─── Lazy singletons ─────────────────────────────────────────────────────────
 let _stripe = null;
