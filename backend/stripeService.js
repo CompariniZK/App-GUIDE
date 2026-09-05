@@ -128,6 +128,59 @@ export async function createCheckoutSession(req, res) {
   }
 }
 
+// ─── POST /api/stripe/create-portal-session ──────────────────────────────────
+// Auth: "Authorization: Bearer <supabase access_token>".
+// Opens the Stripe Customer Portal so the user can cancel / change their
+// subscription and update their card themselves. Required by EU/French law:
+// cancelling must be as easy as subscribing.
+export async function createPortalSession(req, res) {
+  const stripe = getStripe();
+  const supabase = getSupabaseAdmin();
+  if (!stripe || !supabase) {
+    return res.status(503).json({ error: 'Payments are not configured yet.' });
+  }
+
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (!token) return res.status(401).json({ error: 'Missing bearer token.' });
+
+  let user;
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) return res.status(401).json({ error: 'Invalid session.' });
+    user = data.user;
+  } catch {
+    return res.status(401).json({ error: 'Could not verify session.' });
+  }
+
+  // The Stripe customer id was stored on the profile at checkout.
+  let customerId;
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    customerId = profile?.stripe_customer_id || null;
+  } catch {
+    customerId = null;
+  }
+  if (!customerId) {
+    return res.status(400).json({ error: 'No subscription found for this account.' });
+  }
+
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${APP_URL}/`,
+    });
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] create portal session failed:', err?.message || err);
+    return res.status(502).json({ error: 'Could not open the subscription portal.' });
+  }
+}
+
 // ─── POST /api/stripe/webhook ────────────────────────────────────────────────
 // Must receive the RAW body (mounted with express.raw before express.json).
 export async function handleWebhook(req, res) {

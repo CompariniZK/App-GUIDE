@@ -70,6 +70,53 @@ export async function startCheckout(): Promise<CheckoutResult> {
   return { ok: false, error: 'Le paiement est disponible uniquement sur le web.' };
 }
 
+/**
+ * Opens the Stripe Customer Portal so the user can cancel / manage their
+ * subscription. Redirects the browser on success.
+ */
+export async function startPortal(): Promise<CheckoutResult> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) {
+    return { ok: false, error: 'Session expirée. Reconnectez-vous.' };
+  }
+
+  let res: Response;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    res = await fetch(API_ENDPOINTS.stripePortal, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+  } catch {
+    return { ok: false, error: 'Connexion au serveur impossible. Réessayez.' };
+  }
+
+  if (!res.ok) {
+    if (res.status === 400) {
+      return { ok: false, error: 'Aucun abonnement actif trouvé pour ce compte.' };
+    }
+    return { ok: false, error: 'Impossible d’ouvrir la gestion de l’abonnement.' };
+  }
+
+  const data = (await res.json().catch(() => ({}))) as { url?: string };
+  if (!data.url) {
+    return { ok: false, error: 'Réponse invalide du serveur.' };
+  }
+
+  if (typeof window !== 'undefined') {
+    window.location.href = data.url;
+    return { ok: true, redirecting: true };
+  }
+  return { ok: false, error: 'Disponible uniquement sur le web.' };
+}
+
 /** True when the browser came back from Stripe with ?paid=1. */
 export function returnedFromSuccessfulCheckout(): boolean {
   if (typeof window === 'undefined') return false;

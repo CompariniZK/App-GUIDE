@@ -50,4 +50,5 @@ export const API_ENDPOINTS = {
   health: `${API_BASE_URL}/api/health`,
   guides: `${API_BASE_URL}/api/guides`,
   stripeCheckout: `${API_BASE_URL}/api/stripe/create-checkout-session`,
+  stripePortal: `${API_BASE_URL}/api/stripe/create-portal-session`,
 };

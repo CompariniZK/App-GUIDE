@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, TextInput, ActivityIndicator,
+  StatusBar, TextInput, ActivityIndicator, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,10 @@ import { Colors } from '../../constants/colors';
 import { AppLanguage } from '../../types';
 import { useTranslation } from '../../i18n';
 import { searchCommunes, CommuneResult } from '../../services/cities';
-import { confirmDialog } from '../../utils/dialog';
+import { startPortal } from '../../services/payment';
+import { confirmDialog, alertDialog } from '../../utils/dialog';
+
+const IS_WEB = Platform.OS === 'web';
 
 const LANG_LABELS: Record<string, string> = {
   fr: '🇫🇷 Français',
@@ -32,9 +35,10 @@ const COUNTRY_FLAGS: Record<string, string> = {
 const LANGUAGES: AppLanguage[] = ['fr', 'en', 'pt', 'es', 'ar'];
 
 export default function ProfileScreen() {
-  const { profile, resetProfile, setProfile, setCity } = useProfile();
+  const { profile, resetProfile, setProfile, setCity, hasPaid } = useProfile();
   const { signOut, session, configured } = useAuth();
   const { t } = useTranslation();
+  const [portalBusy, setPortalBusy] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [cityQuery, setCityQuery] = useState('');
@@ -66,6 +70,16 @@ export default function ProfileScreen() {
       destructive: true,
     });
     if (ok) await signOut();
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalBusy(true);
+    const result = await startPortal();
+    if (!result.ok) {
+      alertDialog('Abonnement', result.error);
+      setPortalBusy(false);
+    }
+    // On success we redirect to the Stripe portal, so leave `busy` on.
   };
 
   const completed = profile.completedGuides.length;
@@ -263,6 +277,24 @@ export default function ProfileScreen() {
           <SettingRow icon="information-circle-outline" label={t('profile.version')} value="1.0.0" last />
         </View>
 
+        {IS_WEB && configured && session && hasPaid === true && (
+          <TouchableOpacity
+            style={styles.manageBtn}
+            onPress={handleManageSubscription}
+            disabled={portalBusy}
+            activeOpacity={0.85}
+          >
+            {portalBusy ? (
+              <ActivityIndicator color={Colors.primary} />
+            ) : (
+              <>
+                <Ionicons name="card-outline" size={18} color={Colors.primary} />
+                <Text style={styles.manageText}>Gérer mon abonnement</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+
         {configured && session && (
           <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={18} color={Colors.primaryLight} />
@@ -400,6 +432,13 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontWeight: '600',
   },
+  manageBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, minHeight: 50,
+    borderRadius: 14, backgroundColor: Colors.accent,
+    marginBottom: 12,
+  },
+  manageText: { fontSize: 14, color: Colors.primary, fontWeight: '800' },
   signOutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 14,

@@ -6,7 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_USER_MESSAGE_LEN as GROQ_MAX_MSG, MAX_HISTORY_MESSAGES as GROQ_MAX_HIST } from './groqService.js';
 import { searchCommunes, getCommuneResources } from './citiesService.js';
-import { createCheckoutSession, handleWebhook, stripeConfigured } from './stripeService.js';
+import { createCheckoutSession, createPortalSession, handleWebhook, stripeConfigured } from './stripeService.js';
 import { requireAuth, authConfigured } from './authMiddleware.js';
 
 dotenv.config();
@@ -525,6 +525,13 @@ app.get('/api/cities/:insee/resources', requireAuth, async (req, res) => {
  * Returns { url } to redirect the user to Stripe Checkout (one-time €1.99).
  */
 app.post('/api/stripe/create-checkout-session', chatLimiter, createCheckoutSession);
+
+/**
+ * POST /api/stripe/create-portal-session
+ * Auth: "Authorization: Bearer <supabase access_token>".
+ * Returns { url } to the Stripe Customer Portal (cancel / manage subscription).
+ */
+app.post('/api/stripe/create-portal-session', chatLimiter, createPortalSession);
 
 /**
  * GET /api/health
