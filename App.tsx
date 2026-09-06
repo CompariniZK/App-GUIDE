@@ -51,8 +51,13 @@ function useWebViewportFix() {
     // Keep --app-h equal to the height the browser is actually showing.
     const vv = window.visualViewport;
     const sync = () => {
-      const h = vv ? vv.height : window.innerHeight;
-      document.documentElement.style.setProperty('--app-h', h + 'px');
+      const h = Math.round((vv && vv.height) || window.innerHeight || 0);
+      // A zero / absurd reading happens in a hidden tab, during a bfcache
+      // restore or mid-transition. Writing it would collapse the shell to
+      // nothing (blank screen), so keep the 100dvh CSS fallback instead.
+      if (h > 100) {
+        document.documentElement.style.setProperty('--app-h', h + 'px');
+      }
     };
     sync();
 
@@ -60,11 +65,15 @@ function useWebViewportFix() {
     vv?.addEventListener('scroll', sync);
     window.addEventListener('resize', sync);
     window.addEventListener('orientationchange', sync);
+    window.addEventListener('pageshow', sync);
+    document.addEventListener('visibilitychange', sync);
     return () => {
       vv?.removeEventListener('resize', sync);
       vv?.removeEventListener('scroll', sync);
       window.removeEventListener('resize', sync);
       window.removeEventListener('orientationchange', sync);
+      window.removeEventListener('pageshow', sync);
+      document.removeEventListener('visibilitychange', sync);
     };
   }, []);
 }
