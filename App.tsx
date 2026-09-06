@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,12 +10,43 @@ import { Colors } from './src/constants/colors';
 
 const IS_WEB = Platform.OS === 'web';
 
+// Below this width we treat the browser as a phone and drop the desktop frame.
+const PHONE_MAX_WIDTH = 600;
+
+// iOS Safari resizes its toolbars while you scroll, but `height: 100%` (what the
+// Expo web reset uses) resolves against the *large* viewport — as if the toolbar
+// were hidden. The layout ends up taller than what's actually visible, so either
+// the header or the bottom tab bar gets clipped. `100dvh` follows the toolbar,
+// which fixes both. We also stop any accidental sideways scrolling.
+const WEB_VIEWPORT_CSS = `
+  html, body, #root { overflow-x: hidden; }
+  @supports (height: 100dvh) {
+    html, body, #root { height: 100dvh; }
+  }
+`;
+
+function useWebViewportFix() {
+  useEffect(() => {
+    if (!IS_WEB || typeof document === 'undefined') return;
+    const id = 'boussole-viewport-fix';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = WEB_VIEWPORT_CSS;
+    // Appended last so it wins over Expo's own reset.
+    document.head.appendChild(style);
+  }, []);
+}
+
 export default function App() {
   // Preload the icon font so the first paint doesn't show empty "tofu" boxes
   // where Ionicons should be (the vector font loads asynchronously on web).
   const [fontsLoaded, fontError] = useFonts({
     ...Ionicons.font,
   });
+
+  useWebViewportFix();
+  const { width } = useWindowDimensions();
 
   // Safety net: never block the app on font loading. Render after 3s no matter
   // what, even if the font load stalls or errors.
@@ -45,9 +76,12 @@ export default function App() {
 
   // On desktop web, the mobile UI would stretch edge-to-edge and look like a
   // phone lying sideways. Instead we center it in a phone-width "frame" on a
-  // branded backdrop, so a wide screen reads as intentional. On narrow screens
-  // (phones opening the web app) the frame simply fills the viewport.
-  if (IS_WEB) {
+  // branded backdrop, so a wide screen reads as intentional.
+  //
+  // On a real phone the frame is pure harm: its max width/height, rounded
+  // corners and `overflow: hidden` crop the edges of the UI. So we render the
+  // app full-bleed there instead.
+  if (IS_WEB && width > PHONE_MAX_WIDTH) {
     return (
       <View style={styles.webBackdrop}>
         <View style={styles.webFrame}>{app}</View>
