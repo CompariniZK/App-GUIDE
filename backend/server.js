@@ -8,6 +8,7 @@ import { callGroq, ALLOWED_LANGS as GROQ_ALLOWED_LANGS, ALLOWED_SITUATIONS, MAX_
 import { searchCommunes, getCommuneResources } from './citiesService.js';
 import { createCheckoutSession, createPortalSession, handleWebhook, stripeConfigured } from './stripeService.js';
 import { requireAuth, authConfigured } from './authMiddleware.js';
+import { handleContact, contactConfigured } from './contactService.js';
 
 dotenv.config();
 
@@ -533,12 +534,28 @@ app.post('/api/stripe/create-checkout-session', chatLimiter, createCheckoutSessi
  */
 app.post('/api/stripe/create-portal-session', chatLimiter, createPortalSession);
 
+// Contact form: a handful per hour per IP is plenty for a human, and keeps a
+// public unauthenticated endpoint from being used as a mail cannon.
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: IS_PROD ? 5 : 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de messages envoyés. Réessayez plus tard.' },
+});
+
+/**
+ * POST /api/contact
+ * Public website contact form -> owner's inbox (via Resend).
+ */
+app.post('/api/contact', contactLimiter, handleContact);
+
 /**
  * GET /api/health
  * Health check — intentionally minimal, does not leak runtime info.
  */
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', stripe: stripeConfigured(), auth: authConfigured() });
+  res.json({ status: 'ok', stripe: stripeConfigured(), auth: authConfigured(), contact: contactConfigured() });
 });
 
 /**
