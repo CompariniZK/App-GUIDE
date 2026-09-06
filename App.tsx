@@ -22,27 +22,50 @@ const WEB_VIEWPORT_CSS = `
   html, body, #root { overflow-x: hidden; }
   /* Stop the rubber-band scroll that lets the page drift under the toolbar. */
   html, body { overscroll-behavior: none; }
+  :root { --app-h: 100dvh; }
   @supports (height: 100dvh) {
-    html, body, #root { height: 100dvh; }
+    html, body { height: 100dvh; }
   }
-  /* On phones, pin the app to the visual viewport. Without this, iOS Safari
-     still slides the whole page up as the address bar shrinks, hiding the
-     header behind it — 100dvh fixes the height but not the drift. */
+  /* Phones: pin the shell to the *visible* viewport. --app-h is kept in sync
+     with visualViewport.height below, because neither 100vh (too tall) nor
+     position:fixed alone (anchors to the large layout viewport) matches what
+     iOS Safari actually shows while its toolbar slides in and out. */
   @media (max-width: 600px) {
-    #root { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; }
+    #root { position: fixed; top: 0; left: 0; width: 100%; height: var(--app-h); }
   }
 `;
 
 function useWebViewportFix() {
   useEffect(() => {
     if (!IS_WEB || typeof document === 'undefined') return;
+
     const id = 'boussole-viewport-fix';
-    if (document.getElementById(id)) return;
-    const style = document.createElement('style');
-    style.id = id;
-    style.textContent = WEB_VIEWPORT_CSS;
-    // Appended last so it wins over Expo's own reset.
-    document.head.appendChild(style);
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style');
+      style.id = id;
+      style.textContent = WEB_VIEWPORT_CSS;
+      // Appended last so it wins over Expo's own reset.
+      document.head.appendChild(style);
+    }
+
+    // Keep --app-h equal to the height the browser is actually showing.
+    const vv = window.visualViewport;
+    const sync = () => {
+      const h = vv ? vv.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-h', h + 'px');
+    };
+    sync();
+
+    vv?.addEventListener('resize', sync);
+    vv?.addEventListener('scroll', sync);
+    window.addEventListener('resize', sync);
+    window.addEventListener('orientationchange', sync);
+    return () => {
+      vv?.removeEventListener('resize', sync);
+      vv?.removeEventListener('scroll', sync);
+      window.removeEventListener('resize', sync);
+      window.removeEventListener('orientationchange', sync);
+    };
   }, []);
 }
 
