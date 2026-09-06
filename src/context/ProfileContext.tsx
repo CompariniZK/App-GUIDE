@@ -104,6 +104,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   // null = payment status not yet determined (see ProfileContextType.hasPaid).
   const [hasPaid, setHasPaid] = useState<boolean | null>(null);
+  // Mirrors sessionRef as state so effects can react to sign-in / sign-out.
+  const [sessionPresent, setSessionPresent] = useState(false);
   const sessionRef = useRef<Session | null>(null);
   const configured = isSupabaseConfigured();
 
@@ -159,6 +161,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
         const { data } = await supabase.auth.getSession();
         sessionRef.current = data.session;
+        setSessionPresent(!!data.session);
         if (data.session) {
           // Seed hasPaid from the local cache FIRST, so the navigator never
           // hangs on "unknown" (null) for a returning subscriber even if the
@@ -195,6 +198,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (configured) {
       const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
         sessionRef.current = newSession;
+        setSessionPresent(!!newSession);
         if (event === 'SIGNED_OUT' || !newSession) {
           setProfileState(null);
           setHasPaid(null);
@@ -208,7 +212,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           // socket that went stale while the tab was backgrounded. hasPaid is
           // already null after SIGNED_OUT, so a fresh login still shows the
           // splash (not the paywall) until the check resolves.
-          await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
+          try {
+            await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
+          } finally {
+            // An unknown status parks the whole app on the splash screen, so
+            // settle it no matter how the refresh went.
+            setHasPaid(prev => (prev === null ? false : prev));
+          }
         }
       });
       return () => {
@@ -221,6 +231,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; clearTimeout(failSafe); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Failsafe: the navigator waits on the splash while the subscription status
+  // is unknown. If it hasn't settled shortly after sign-in, fall back to 'not
+  // subscribed': the paywall is recoverable (and self-corrects on the next
+  // check), an endless spinner is not.
+  useEffect(() => {
+    if (!configured || !sessionPresent || hasPaid !== null) return;
+    const t = setTimeout(() => {
+      setHasPaid(prev => (prev === null ? false : prev));
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [configured, sessionPresent, hasPaid]);
 
   // ── Local cache ──────────────────────────────────────────────────────────
   const loadLocal = useCallback(async () => {
