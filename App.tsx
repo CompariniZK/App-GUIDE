@@ -20,8 +20,16 @@ const PHONE_MAX_WIDTH = 600;
 // which fixes both. We also stop any accidental sideways scrolling.
 const WEB_VIEWPORT_CSS = `
   html, body, #root { overflow-x: hidden; }
+  /* Stop the rubber-band scroll that lets the page drift under the toolbar. */
+  html, body { overscroll-behavior: none; }
   @supports (height: 100dvh) {
     html, body, #root { height: 100dvh; }
+  }
+  /* On phones, pin the app to the visual viewport. Without this, iOS Safari
+     still slides the whole page up as the address bar shrinks, hiding the
+     header behind it — 100dvh fixes the height but not the drift. */
+  @media (max-width: 600px) {
+    #root { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; }
   }
 `;
 
