@@ -9,7 +9,7 @@ const es: Record<string, string> = {
   'welcome.feature.multilingual.title': 'Multilingüe',
   'welcome.feature.multilingual.desc': 'Francés, inglés, portugués, español y árabe',
   'welcome.cta': 'Comenzar',
-  'welcome.disclaimer': '100% gratis · No se requiere cuenta para empezar',
+  'welcome.disclaimer': 'Guías oficiales · Tus datos permanecen en Europa 🇪🇺',
 
   // Nationality
   'nationality.title': '¿Cuál es tu nacionalidad?',
@@ -467,7 +467,7 @@ const es: Record<string, string> = {
   // ─── Auth ──────────────────────────────────────────────────────────────
   'auth.welcome.createAccount': 'Crear una cuenta',
   'auth.welcome.haveAccount': 'Ya tengo una cuenta',
-  'auth.welcome.disclaimer': 'Gratuito · Tus datos permanecen en Europa 🇪🇺',
+  'auth.welcome.disclaimer': 'Sin compromiso · Tus datos permanecen en Europa 🇪🇺',
 
   'auth.field.email': 'Correo electrónico',
   'auth.field.password': 'Contraseña',

@@ -9,7 +9,7 @@ const en: Record<string, string> = {
   'welcome.feature.multilingual.title': 'Multilingual',
   'welcome.feature.multilingual.desc': 'French, English, Portuguese, Spanish and Arabic',
   'welcome.cta': 'Get started',
-  'welcome.disclaimer': '100% free \u00b7 No account required to start',
+  'welcome.disclaimer': 'Official guides · Your data stays in Europe 🇪🇺',
 
   // Nationality
   'nationality.title': 'What is your nationality?',
@@ -467,7 +467,7 @@ const en: Record<string, string> = {
   // \u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   'auth.welcome.createAccount': 'Create an account',
   'auth.welcome.haveAccount': 'I already have an account',
-  'auth.welcome.disclaimer': 'Free \u00b7 Your data stays in Europe \ud83c\uddea\ud83c\uddfa',
+  'auth.welcome.disclaimer': 'No commitment · Your data stays in Europe 🇪🇺',
 
   'auth.field.email': 'Email address',
   'auth.field.password': 'Password',

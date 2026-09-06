@@ -9,7 +9,7 @@ const pt: Record<string, string> = {
   'welcome.feature.multilingual.title': 'Multil\u00edngue',
   'welcome.feature.multilingual.desc': 'Franc\u00eas, Ingl\u00eas, Portugu\u00eas, Espanhol e \u00c1rabe',
   'welcome.cta': 'Come\u00e7ar',
-  'welcome.disclaimer': '100% gratuito \u00b7 Sem necessidade de conta para come\u00e7ar',
+  'welcome.disclaimer': 'Guias oficiais · Seus dados ficam na Europa 🇪🇺',
 
   // NationalityScreen
   'nationality.title': 'Qual \u00e9 a sua nacionalidade?',
@@ -467,7 +467,7 @@ const pt: Record<string, string> = {
   // \u2500\u2500\u2500 Auth \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   'auth.welcome.createAccount': 'Criar uma conta',
   'auth.welcome.haveAccount': 'J\u00e1 tenho uma conta',
-  'auth.welcome.disclaimer': 'Gratuito \u00b7 Seus dados ficam na Europa \ud83c\uddea\ud83c\uddfa',
+  'auth.welcome.disclaimer': 'Sem compromisso · Seus dados ficam na Europa 🇪🇺',
 
   'auth.field.email': 'Endere\u00e7o de e-mail',
   'auth.field.password': 'Senha',
