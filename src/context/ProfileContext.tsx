@@ -76,6 +76,25 @@ const ALLOWED_SITUATIONS = new Set<UserSituation>([
 ]);
 const NATIONALITY_RE = /^[A-Z]{2,5}$/; // ISO 2-3 + 'OTHER'
 
+// Ceiling for the subscription check. It backs the "J'ai déjà payé" button, and
+// a request that never settles leaves that button spinning with no way out.
+const PAYMENT_CHECK_TIMEOUT_MS = 10000;
+
+/** Resolve with `fallback` if `p` hasn't settled within `ms`. Never rejects. */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>(resolve => {
+    let settled = false;
+    const done = (v: T) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(v);
+    };
+    const timer = setTimeout(() => done(fallback), ms);
+    p.then(done, () => done(fallback));
+  });
+}
+
 function buildSafePatch(updates: Partial<UserProfile>): Record<string, unknown> {
   const safe: Record<string, unknown> = {};
   if (updates.nationality !== undefined && NATIONALITY_RE.test(updates.nationality)) {
@@ -107,6 +126,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   // Mirrors sessionRef as state so effects can react to sign-in / sign-out.
   const [sessionPresent, setSessionPresent] = useState(false);
   const sessionRef = useRef<Session | null>(null);
+  // Which user we've already pulled profile + payment status for. Guards against
+  // re-running the whole sync on TOKEN_REFRESHED, which fires on every tab
+  // refocus and hourly — that repeat work is what used to hang the UI on return.
+  const syncedUserId = useRef<string | null>(null);
   const configured = isSupabaseConfigured();
 
   // ── Payment status (web paywall) ───────────────────────────────────────────
@@ -119,11 +142,23 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return false;
     }
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('has_paid')
-        .eq('id', sess.user.id)
-        .maybeSingle();
+      // Wrapped in an async IIFE: the PostgREST builder is only PromiseLike.
+      const query = (async () => {
+        const res = await supabase
+          .from('profiles')
+          .select('has_paid')
+          .eq('id', sess.user.id)
+          .maybeSingle();
+        return {
+          data: (res.data as { has_paid: boolean | null } | null) ?? null,
+          error: res.error as unknown,
+        };
+      })();
+      const { data, error } = await withTimeout(
+        query,
+        PAYMENT_CHECK_TIMEOUT_MS,
+        { data: null, error: new Error('payment check timed out') },
+      );
       if (error) {
         // On a transient error, don't downgrade a known-paid state; but if we
         // never determined it, settle on false so the UI can't hang on splash.
@@ -139,6 +174,24 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return false;
     }
   }, [configured]);
+
+  // Pull profile + payment status once per user. Safe to call from anywhere:
+  // repeat calls for the same user are no-ops.
+  const syncUser = useCallback(async (userId: string) => {
+    if (syncedUserId.current === userId) return;
+    syncedUserId.current = userId;
+    try {
+      await Promise.all([loadRemote(userId), refreshPaymentStatus()]);
+    } catch {
+      // Let the next sign-in retry rather than stay stuck on a failed attempt.
+      syncedUserId.current = null;
+    } finally {
+      // An unknown status parks the whole app on the splash screen, so settle
+      // it no matter how the refresh went.
+      setHasPaid(prev => (prev === null ? false : prev));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshPaymentStatus]);
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -169,13 +222,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           // then confirms/corrects it against the server.
           try {
             const cached = await AsyncStorage.getItem(PAID_CACHE_PREFIX + data.session.user.id);
-            if (cached === '1') setHasPaid(true);
-            else if (cached === '0') setHasPaid(false);
+            // Seed only — the auth event may already have landed the server
+            // value by now, and that one wins over a possibly stale cache.
+            if (cached === '1') setHasPaid(prev => (prev === null ? true : prev));
+            else if (cached === '0') setHasPaid(prev => (prev === null ? false : prev));
           } catch { /* ignore */ }
-          await Promise.all([
-            loadRemote(data.session.user.id),
-            refreshPaymentStatus(),
-          ]);
+          await syncUser(data.session.user.id);
         } else {
           // Not signed in → no profile (Auth flow will handle it)
           setProfileState(null);
@@ -196,30 +248,28 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     // Subscribe to auth changes
     if (configured) {
-      const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+        // MUST stay synchronous. auth-js runs this callback *inside* its storage
+        // lock and awaits it before releasing (GoTrueClient._notifyAllSubscribers).
+        // Any supabase call made here — including `.from()`, which reads the
+        // access token — asks for that same lock and deadlocks until it times
+        // out, which is what used to strand paid users on the paywall and leave
+        // "J'ai déjà payé" spinning. Do the real work after the lock is gone.
         sessionRef.current = newSession;
         setSessionPresent(!!newSession);
+
         if (event === 'SIGNED_OUT' || !newSession) {
+          syncedUserId.current = null;
           setProfileState(null);
           setHasPaid(null);
-          await AsyncStorage.removeItem(STORAGE_KEY);
+          AsyncStorage.removeItem(STORAGE_KEY).catch(() => { /* ignore */ });
           return;
         }
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          // Re-sync in the background. Do NOT blank hasPaid here: TOKEN_REFRESHED
-          // fires when the tab regains focus, and blanking would drop the whole
-          // app back to the splash — and hang there if this refetch stalls on a
-          // socket that went stale while the tab was backgrounded. hasPaid is
-          // already null after SIGNED_OUT, so a fresh login still shows the
-          // splash (not the paywall) until the check resolves.
-          try {
-            await Promise.all([loadRemote(newSession.user.id), refreshPaymentStatus()]);
-          } finally {
-            // An unknown status parks the whole app on the splash screen, so
-            // settle it no matter how the refresh went.
-            setHasPaid(prev => (prev === null ? false : prev));
-          }
-        }
+
+        // syncUser is a no-op when this user is already loaded, so the frequent
+        // TOKEN_REFRESHED events cost nothing and never disturb the UI.
+        const userId = newSession.user.id;
+        setTimeout(() => { void syncUser(userId); }, 0);
       });
       return () => {
         mounted = false;
@@ -236,11 +286,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   // is unknown. If it hasn't settled shortly after sign-in, fall back to 'not
   // subscribed': the paywall is recoverable (and self-corrects on the next
   // check), an endless spinner is not.
+  //
+  // Must outlast PAYMENT_CHECK_TIMEOUT_MS, or on a slow connection this would
+  // fire first and flash the paywall at a subscriber whose real status was
+  // still in flight.
   useEffect(() => {
     if (!configured || !sessionPresent || hasPaid !== null) return;
     const t = setTimeout(() => {
       setHasPaid(prev => (prev === null ? false : prev));
-    }, 8000);
+    }, PAYMENT_CHECK_TIMEOUT_MS + 3000);
     return () => clearTimeout(t);
   }, [configured, sessionPresent, hasPaid]);
 
